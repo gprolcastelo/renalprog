@@ -27,17 +27,8 @@
 - **Enrichment Analysis**: Integration with R-based DESeq2 and GSEA for pathway analysis
 - **Visualization**: Comprehensive plotting functions for all analysis steps
 
-## 📚 Documentation
-
-Comprehensive documentation is available with guides for users, contributors, and reproducers:
-
-- **[📖 Full Documentation](https://gprolcastelo.github.io/renalprog/)** - Complete documentation website
-- **[🚀 Documentation Quick Start](DOCUMENTATION_QUICKSTART.md)** - Preview and deploy documentation
-- **[📘 Documentation Guide](DOCUMENTATION_GUIDE.md)** - Detailed documentation guide
-- **[📋 Documentation Index](DOCUMENTATION_INDEX.md)** - Master index of all documentation resources
 
 ### For New Users
-- Start with the [Installation Guide](INSTALLATION.md)
 - Follow the [Quick Start Tutorial](docs/docs/tutorials/quickstart.md)
 - Explore [Step-by-Step Tutorials](docs/docs/tutorials/index.md)
 
