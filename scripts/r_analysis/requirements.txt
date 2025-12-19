@@ -1,0 +1,17 @@
+# R Package Dependencies for renalprog
+#
+# Install these packages using the install_r_packages.R script:
+#   Rscript scripts/r_analysis/install_r_packages.R
+#
+# Or manually in R:
+#   install.packages(c("gprofiler2", "ggplot2", "optparse"))
+
+# Gene enrichment analysis
+gprofiler2
+
+# Plotting and visualization
+ggplot2
+
+# Command-line argument parsing
+optparse
+

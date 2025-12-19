@@ -1,0 +1,135 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "renalprog"
+version = "0.1.0"
+description = "A Python package for simulating kidney cancer progression with synthetic data generation and machine learning."
+readme = "README.md"
+authors = [
+    {name = "Guillermo Prol Castelo", email = "guillermo.prol@bsc.es"}
+]
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["cancer", "kidney", "KIRC", "VAE", "bioinformatics", "machine-learning", "progression"]
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "scikit-learn>=1.5.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.13.0",
+    "plotly>=5.14.0",
+    "tqdm>=4.65.0",
+    "pydeseq2>=0.4.0",
+    "umap-learn>=0.5.3",
+    "optuna>=3.3.0",
+    "xgboost>=2.0.0",
+    "h5py>=3.8.0",
+    "networkx>=3.1",
+    "phate>=1.0.0",
+    "pingouin>=0.5.0",
+    "sdv>=1.2.0",
+    "sdmetrics>=0.10.0",
+    "tsfresh>=0.20.0",
+    "imbalanced-learn>=0.11.0",
+    "shap>=0.42.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.3.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.3.0",
+    "flake8>=6.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.3.0",
+    "sphinx>=6.2.0",
+    "sphinx-rtd-theme>=1.2.0",
+]
+docs = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.1.0",
+    "mkdocstrings[python]>=0.21.0",
+    "black>=23.3.0",
+]
+test = [
+    "pytest>=7.3.0",
+    "pytest-cov>=4.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/renalprog"
+Documentation = "https://renalprog.readthedocs.io"
+Repository = "https://github.com/yourusername/renalprog"
+Issues = "https://github.com/yourusername/renalprog/issues"
+
+[project.scripts]
+renalprog-preprocess = "renalprog.cli:preprocess"
+renalprog-train = "renalprog.cli:train"
+renalprog-generate = "renalprog.cli:generate"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["renalprog*"]
+exclude = ["tests*", "docs*", "notebooks*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | \.tox
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v"
+# Note: To enable coverage reporting, install pytest-cov and add these options:
+# --cov=renalprog --cov-report=html --cov-report=term
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true

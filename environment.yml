@@ -1,0 +1,48 @@
+name: renalprog
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Python
+  - python=3.9
+
+  # R and R packages
+  - r-base>=4.0
+  - r-gprofiler2
+  - r-ggplot2
+  - r-optparse
+
+  # Python scientific computing (core dependencies)
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+
+  # Deep learning
+  - pytorch
+  - torchvision
+
+  # Visualization
+  - matplotlib
+  - seaborn
+
+  # Bioinformatics
+  - umap-learn
+
+  # Development tools
+  - pip
+
+  # Pip-installed packages
+  - pip:
+    - xgboost
+    - optuna
+    - sdmetrics
+    - tsfresh
+    - python-slugify
+    - pytest
+    - pytest-cov
+    - black
+    - flake8
+    - isort
+
