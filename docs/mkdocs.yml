@@ -1,0 +1,222 @@
+site_name: renalprog
+site_description: A Python package for simulating kidney cancer progression with synthetic data generation and machine learning.
+site_author: Guillermo Prol-Castelo (Barcelona Supercomputing Center), for the EVENFLOW European Project
+site_url: https://github.com/gprolcastelo/renalprog
+
+repo_name: gprolcastelo/renalprog
+repo_url: https://github.com/gprolcastelo/renalprog
+edit_uri: edit/main/docs/docs/
+
+# Copyright
+copyright: Copyright &copy; 2022-2025 EVENFLOW Project
+
+# Theme configuration
+theme:
+  name: material
+  language: en
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  logo: assets/images/kidneys.png
+  favicon: assets/images/kidneys.png
+  icon:
+    repo: fontawesome/brands/github
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+  - minify:
+      minify_html: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [..]  # Add parent directory to Python path
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_category_heading: true
+            merge_init_into_class: true
+            group_by_category: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 80
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+      fallback_to_build_date: true
+      enable_git_follow: false
+
+# Extra configuration
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/gprolcastelo/renalprog
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/renalprog/
+  analytics:
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve by opening an issue.
+
+# Additional CSS
+extra_css:
+  - stylesheets/extra.css
+
+# Additional JavaScript
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started.md
+      - Quick Start: tutorials/quickstart.md
+      - Data Requirements: tutorials/data-requirements.md
+  - Tutorials:
+      - Overview: tutorials/index.md
+      - Using Pretrained Models: tutorials/pretrained-models.md
+      - Complete Pipeline: tutorials/complete-pipeline.md
+      - Step 1 - Data Processing: tutorials/step1-data-processing.md
+      - Step 2 - VAE Training: tutorials/step2-vae-training.md
+      - Step 3 - Reconstruction: tutorials/step3-reconstruction.md
+      - Step 4 - Trajectories: tutorials/step4-trajectories.md
+      - Step 5 - Classification: tutorials/step5-classification.md
+      - Step 6 - Enrichment: tutorials/step6-enrichment.md
+      - Visualization: tutorials/visualization.md
+  - Reproducibility:
+      - Overview: reproducibility/index.md
+      - System Requirements: reproducibility/requirements.md
+      - Data Preparation: reproducibility/data-preparation.md
+      - Running the Pipeline: reproducibility/pipeline.md
+      - Expected Results: reproducibility/results.md
+      - Troubleshooting: reproducibility/troubleshooting.md
+  - API Reference:
+      - Overview: api/index.md
+      - Configuration: api/config.md
+      - Data Processing:
+          - Dataset: api/dataset.md
+          - Features: api/features.md
+      - Modeling:
+          - VAE Models: api/models.md
+          - Training: api/training.md
+          - Prediction: api/prediction.md
+          - Trajectories: api/trajectories.md
+          - Classification: api/classification.md
+      - Enrichment: api/enrichment.md
+      - Visualization: api/plots.md
+      - Utilities: api/utils.md
+  - Advanced Topics:
+      - Architecture: advanced/architecture.md
+      - Trajectory Generation Details: TRAJECTORIES.md
+      - Classification Details: CLASSIFICATION.md
+      - Enrichment Analysis Details: ENRICHMENT_ANALYSIS.md
+      - Enrichment Quick Reference: ENRICHMENT_QUICK_REF.md
+      - Pathway Heatmap Analysis: PATHWAY_HEATMAP.md
+      - GSEA Installation: GSEA_INSTALLATION.md
+      - R Analysis Scripts: R_ANALYSIS.md
+      - R Integration: advanced/r-integration.md
+      - Custom Models: advanced/custom-models.md
+      - Performance Tuning: advanced/performance.md
+      - GPU Acceleration: advanced/gpu.md
+  - Contributing:
+      - Guidelines: contributing/guidelines.md
+      - Development Setup: contributing/development.md
+      - Code Style: contributing/code-style.md
+      - Testing: contributing/testing.md
+  - Citation & License:
+      - How to Cite: citation.md
+      - License: license.md
+      - Acknowledgments: acknowledgments.md

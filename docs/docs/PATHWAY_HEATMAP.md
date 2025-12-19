@@ -1,0 +1,218 @@
+# Pathway Enrichment Heatmap
+
+## Overview
+
+The pathway enrichment heatmap visualization summarizes GSEA results across all trajectories and timepoints. The pipeline generates **five different heatmaps** to provide comprehensive views of pathway dynamics during cancer progression.
+
+## Heatmap Types
+
+### 1. Top Varying Pathways
+Shows the 50 pathways with the highest variance between first and last timepoints.
+
+- **Purpose**: Identify pathways that change most dramatically during progression
+- **Colormap**: RdBu_r (red-white-blue diverging)
+- **Interpretation**: Pathways with largest temporal dynamics
+
+### 2. Top Upregulated Pathways
+Shows the 50 pathways with highest average NES (most consistently upregulated).
+
+- **Purpose**: Identify pathways activated during progression
+- **Colormap**: YlGn (yellow-green sequential)
+- **Interpretation**: Consistently activated pathways across progression
+
+### 3. Top Downregulated Pathways
+Shows the 50 pathways with lowest average NES (most consistently downregulated).
+
+- **Purpose**: Identify pathways suppressed during progression
+- **Colormap**: YlOrBr (yellow-orange-brown sequential)
+- **Interpretation**: Consistently suppressed pathways across progression
+
+### 4. High-Level Pathways
+Shows 29 Reactome high-level pathways (top-level categories).
+
+- **Purpose**: Get broad overview of biological processes
+- **Pathways**: Cell Cycle, DNA Repair, Immune System, Metabolism, Signal Transduction, etc.
+- **Colormap**: RdBu_r
+- **Interpretation**: System-level view of cancer progression
+
+### 5. Literature Pathways
+Shows 33 pathways from kidney cancer literature.
+
+- **Purpose**: Focus on pathways known to be important in kidney cancer
+- **Pathways**: VHL/HIF pathway, PI3K/AKT/MTOR, Warburg effect, TCA cycle, etc.
+- **Colormap**: RdBu_r
+- **Interpretation**: Validation of known biology and discovery of new patterns
+
+## What the Heatmaps Show
+
+- **Rows**: Pathway names
+- **Columns**: Pseudotime progression (50 timepoints from early to late)
+- **Values**: Sum of NES (Normalized Enrichment Score) across all patients at each timepoint
+- **Colors**: 
+  - Red/Green/Brown (high values): Pathway enriched/upregulated
+  - Blue/Yellow (low values): Pathway depleted/downregulated
+  - White (middle): NES near zero or not significant
+
+## Filtering criteria
+
+Only pathways meeting these criteria are included:
+
+1. **FDR q-value < 0.05** (default, configurable)
+2. At least one significant enrichment across all trajectories
+
+## Interpretation
+
+### Temporal Dynamics
+
+For each pathway, the heatmap shows how enrichment changes across pseudotime:
+
+- **Consistently high across time**: Pathway remains activated throughout progression
+- **Increasing over time**: Pathway becomes more activated as disease progresses
+- **Decreasing over time**: Pathway becomes less activated/more suppressed
+- **Transient changes**: Pathway activated/suppressed at specific stages
+
+### Example Interpretations
+
+1. **Cell Cycle pathway shows increasing upregulation**:
+   - Increased proliferation during disease progression
+   - Consistent with cancer biology
+
+2. **DNA Repair pathway shows decreasing activity**:
+   - Loss of DNA repair capacity
+   - May enable accumulation of mutations
+
+3. **Immune System pathway varies across time**:
+   - Complex immune response dynamics
+   - May indicate immune escape mechanisms
+
+4. **Metabolic pathways (Warburg effect)**:
+   - Early activation suggests metabolic reprogramming
+   - Known hallmark of cancer
+
+## Files Generated
+
+When you run the pathway heatmap generation (Step 6b), the following files are created:
+
+### Data File
+- **pathway_heatmap_data.csv**: Matrix of NES values (pathways × timepoints)
+
+### Visualization Files (for each heatmap type)
+
+1. **top_varying_pathways.[pdf/png/svg]**: Top 50 most varying pathways
+2. **top_upregulated_pathways.[pdf/png/svg]**: Top 50 upregulated pathways
+3. **top_downregulated_pathways.[pdf/png/svg]**: Top 50 downregulated pathways
+4. **high_level_pathways.[pdf/png/svg]**: 29 Reactome high-level pathways
+5. **literature_pathways.[pdf/png/svg]**: 33 kidney cancer literature pathways
+
+All heatmaps are saved in PDF (publication quality), PNG (high-res), and SVG (vector) formats.
+
+## Usage
+
+### Generate Heatmaps from Enrichment Results
+
+```bash
+python scripts/pipeline_steps/6b_generate_pathway_heatmap.py \
+    --enrichment_file data/processed/20251219_enrichment/trajectory_enrichment.csv \
+    --output_dir data/processed/20251219_enrichment \
+    --fdr_threshold 0.05
+```
+
+### Parameters
+
+- `--enrichment_file`: Path to combined enrichment results CSV
+- `--output_dir`: Directory to save heatmaps
+- `--fdr_threshold`: FDR q-value cutoff (default: 0.05)
+
+### Python API
+
+```python
+from renalprog.enrichment import generate_pathway_heatmap
+
+heatmap_data, figures_dict = generate_pathway_heatmap(
+    enrichment_file='data/processed/enrichment/trajectory_enrichment.csv',
+    output_dir='data/processed/enrichment',
+    fdr_threshold=0.05
+)
+
+# figures_dict contains:
+# - 'top_varying': Figure object
+# - 'top_upregulated': Figure object
+# - 'top_downregulated': Figure object
+# - 'high_level': Figure object
+# - 'literature': Figure object
+```
+
+## Implementation Details
+
+The heatmaps are generated by:
+
+1. **Filtering**: Keep only results with FDR q-val < threshold
+2. **Grouping**: Group by Pathway name and Timepoint index
+3. **Aggregation**: Sum NES values across all patients at each timepoint
+4. **Pathway Selection**:
+   - **Top varying**: Calculate variance between first and last timepoint, select top 50
+   - **Top upregulated**: Calculate mean NES, select top 50 positive
+   - **Top downregulated**: Calculate mean NES, select top 50 negative
+   - **High-level**: Filter for 29 predefined Reactome pathways
+   - **Literature**: Filter for 33 kidney cancer-related pathways
+5. **Pivoting**: Create matrix with pathways as rows, timepoints as columns
+6. **Visualization**: Create heatmap with appropriate colormap and styling
+
+### Technical Notes
+
+- Uses PyDESeq2 for differential expression (not simple fold-change)
+- RSEM data is reverse log-transformed before DESeq2 analysis
+- Each trajectory timepoint compared against healthy controls
+- NES values summed across all patients for each (pathway, timepoint) pair
+
+## Tips for Analysis
+
+1. **Compare heatmap types**: Look for pathways appearing in multiple heatmaps
+2. **Temporal patterns**: Identify early vs late activation/suppression
+3. **Literature validation**: Check if known pathways show expected patterns
+4. **Novel discoveries**: Look for unexpected pathway dynamics in top varying
+5. **Biological context**: Use high-level pathways for systems-level understanding
+6. **Publication**: Use vector formats (SVG/PDF) for manuscript figures
+
+## Troubleshooting
+
+### No significant pathways found
+
+If heatmaps are empty or have few pathways:
+
+- Check FDR threshold (try 0.1 or 0.25)
+- Verify GSEA ran successfully for all trajectories
+- Check that PyDESeq2 analysis completed without errors
+- Ensure trajectory data has sufficient dynamic range
+
+### Missing literature/high-level pathways
+
+If specific pathway categories are missing:
+
+- Pathway names must match exactly (case-sensitive)
+- Check pathway database (ReactomePathways.gmt) contains these pathways
+- Pathways may not be significant at current FDR threshold
+
+### Memory errors during generation
+
+If heatmap generation fails:
+
+- Large datasets may require more memory
+- Process heatmaps individually if needed
+- Use lower resolution for initial exploration
+
+## Related Functions
+
+- `generate_pathway_heatmap()`: Main function in `renalprog.enrichment`
+- `plot_heatmap_regulation()`: Low-level plotting function
+- `EnrichmentPipeline.run()`: Full enrichment pipeline
+- Script: `scripts/pipeline_steps/6_enrichment_analysis.py`
+- Script: `scripts/pipeline_steps/6b_generate_pathway_heatmap.py`
+
+## References
+
+- **PyDESeq2**: Muzellec et al. (2022). PyDESeq2: a python package for bulk RNA-seq differential expression analysis.
+- **GSEA**: Subramanian et al. (2005). Gene set enrichment analysis. PNAS 102(43):15545-15550.
+- **Reactome**: Jassal et al. (2020). The reactome pathway knowledgebase. Nucleic Acids Research 48(D1):D498-D503.
+- **Original implementation**: Prol-Castelo, G. (2024). My_BRCA repository.
+
