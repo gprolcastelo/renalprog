@@ -2,206 +2,142 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/CLASSIFICATION/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/ENRICHMENT_ANALYSIS/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/ENRICHMENT_QUICK_REF/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/GSEA_INSTALLATION/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/PATHWAY_HEATMAP/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/R_ANALYSIS/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/TRAJECTORIES/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/acknowledgments/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/citation/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/getting-started/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/license/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/gprolcastelo/renalprog/advanced/architecture/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <loc>https://github.com/gprolcastelo/renalprog/advanced/ENRICHMENT_ANALYSIS/</loc>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/gprolcastelo/renalprog/advanced/custom-models/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <loc>https://github.com/gprolcastelo/renalprog/advanced/GSEA_INSTALLATION/</loc>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
-         <loc>https://github.com/gprolcastelo/renalprog/advanced/gpu/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <loc>https://github.com/gprolcastelo/renalprog/advanced/PATHWAY_HEATMAP/</loc>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/gprolcastelo/renalprog/advanced/R_ANALYSIS/</loc>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/advanced/performance/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/advanced/r-integration/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/classification/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/config/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/dataset/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/enrichment/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/features/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/models/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/plots/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/prediction/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/training/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/trajectories/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/api/utils/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/contributing/code-style/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/contributing/development/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/contributing/guidelines/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/contributing/testing/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/reproducibility/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/reproducibility/data-preparation/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/reproducibility/pipeline/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/reproducibility/requirements/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/reproducibility/results/</loc>
-         <lastmod>2025-12-20</lastmod>
-    </url>
-    <url>
-         <loc>https://github.com/gprolcastelo/renalprog/reproducibility/troubleshooting/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/complete-pipeline/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/data-requirements/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/gprolcastelo/renalprog/tutorials/installation/</loc>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/pretrained-models/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/quickstart/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/step1-data-processing/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/step2-vae-training/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/step3-reconstruction/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/step4-trajectories/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/step5-classification/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/step6-enrichment/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
     <url>
          <loc>https://github.com/gprolcastelo/renalprog/tutorials/visualization/</loc>
-         <lastmod>2025-12-20</lastmod>
+         <lastmod>2026-01-28</lastmod>
     </url>
 </urlset>
