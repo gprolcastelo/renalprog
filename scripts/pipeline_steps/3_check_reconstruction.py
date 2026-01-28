@@ -23,6 +23,10 @@ parser.add_argument('--cancer_type',
                     type=str,
                     default='KIRC',
                     help='Cancer type to process (KIRC or BRCA). Default: KIRC. Note: for downloading models from Hugging Face, only KIRC and BRCA are available.')
+parser.add_argument('--stage_column',
+                    type=str,
+                    default='ajcc_pathologic_tumor_stage',
+                    help='Stages column name in clinical data. Default: ajcc_pathologic_tumor_stage. In this repo, it has sometimes been called simply "stage".')
 parser.add_argument('--hf_models',
                     action='store_true',
                     help='Load pre-trained models from Hugging Face Hub.')
@@ -50,7 +54,7 @@ path_rnaseq = f"data/interim/preprocessed_{cancer_type}_data/preprocessed_rnaseq
 path_clinical = f"data/interim/preprocessed_{cancer_type}_data/clinical_data.csv"
 
 preprocessed = load_rnaseq_data(path_rnaseq)
-subtypes = load_clinical_data(path_clinical)
+subtypes = load_clinical_data(path_clinical,stage_column=args.stage_column)
 
 # Ensure samples match between data and clinical info
 if preprocessed.shape[0]!=subtypes.shape[0]:

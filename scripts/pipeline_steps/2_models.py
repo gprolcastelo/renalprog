@@ -9,14 +9,15 @@ import logging
 configure_logging(level=logging.INFO)
 
 cancer_type = "KIRC"
+stage_column = "stage" # or "ajcc_pathologic_tumor_stage"
 
 # Pre-processing data
 # preprocessed_data_path = INTERIM_DATA_DIR / f"preprocessed_{cancer_type}_data"
 # path_rnaseq = preprocessed_data_path / "preprocessed_rnaseq.csv"
 # path_clinical = preprocessed_data_path / "stages.csv"
 # Using these for testing:
-path_rnaseq = "data/interim/preprocessed_KIRC/preprocessed_rnaseq.csv"
-path_clinical = "data/interim/preprocessed_KIRC/clinical_data.csv"
+path_rnaseq = "data/interim/preprocessed_KIRC_data/preprocessed_rnaseq.csv"
+path_clinical = "data/interim/preprocessed_KIRC_data/clinical_data.csv"
 
 # Create train/test splits
 test_size = 0.2
@@ -30,6 +31,7 @@ X_train, X_test, y_train, y_test, _, _ = dataset.create_train_test_split(
     test_size=test_size,
     seed=2023,
     output_dir=traintest_dir,
+    stage_column=stage_column
 )
 logging.info(f"Samples in Train set: {X_train.shape[0]}")
 logging.info(f"Samples in Test set: {X_test.shape[0]}")

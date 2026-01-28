@@ -63,9 +63,9 @@ logger.info("STEP 1: Loading and preprocessing data")
 logger.info("-" * 80)
 
 # Use EXACT same approach as original working implementation
-data_path = str(INTERIM_DATA_DIR / "20240930_preprocessed_KIRC" / "rnaseq_maha.csv")
+data_path = str(INTERIM_DATA_DIR / "preprocessed_KIRC_data" / "preprocessed_rnaseq.csv")
 metadata_path = str(
-    INTERIM_DATA_DIR / "20240930_preprocessed_KIRC" / "CuratedClinicalData.csv"
+    INTERIM_DATA_DIR / "preprocessed_KIRC_data" / "clinical_data.csv"
 )
 
 # Load the data (EXACT copy from load_data function)
@@ -73,14 +73,15 @@ data = pd.read_csv(data_path, index_col=0)
 metadata = pd.read_csv(metadata_path, index_col=0)
 
 # Process stage information
-metadata["stage"] = metadata["ajcc_pathologic_tumor_stage"].replace(
-    {f"Stage {i}": i for i in ["I", "II", "III", "IV"]}
-)
-if early_late:
-    metadata["stage"] = metadata["stage"].replace(
-        {"I": "early", "II": "early", "III": "late", "IV": "late"}
+if "stage" not in metadata.columns:
+    metadata["stage"] = metadata["ajcc_pathologic_tumor_stage"].replace(
+        {f"Stage {i}": i for i in ["I", "II", "III", "IV"]}
     )
-metadata.drop(columns=["ajcc_pathologic_tumor_stage"], inplace=True)
+    if early_late:
+        metadata["stage"] = metadata["stage"].replace(
+            {"I": "early", "II": "early", "III": "late", "IV": "late"}
+        )
+    metadata.drop(columns=["ajcc_pathologic_tumor_stage"], inplace=True)
 
 # Process cancer-specific metadata for KIRC
 metadata_selection = metadata[["histological_type", "race", "gender", "stage"]].copy()
