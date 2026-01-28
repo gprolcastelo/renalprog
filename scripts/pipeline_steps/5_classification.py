@@ -17,6 +17,7 @@ Date: 2025-12-16
 """
 
 import os
+
 # Set the maximum number of threads to a higher value
 os.environ["NUMEXPR_MAX_THREADS"] = "112"
 import sys
@@ -29,24 +30,21 @@ import xgboost as xgb
 from tqdm import tqdm
 import plotly.express as px
 import plotly.graph_objects as go
+from renalprog.config import DATA_DIR, MODELS_DIR, REPORTS_DIR
+from renalprog.modeling.train import classification_benchmark
+from renalprog.utils import set_seed
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from renalprog.config import DATA_DIR, MODELS_DIR, REPORTS_DIR
-from renalprog.modeling.train import classification_benchmark
-from renalprog.utils import set_seed
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(levelname)s] %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -59,7 +57,9 @@ cancer_type = "KIRC"
 today = datetime.now().strftime("%Y%m%d")
 
 # Gene selection
-USE_IMPORTANT_GENES = False  # Set to True to use only important genes, False to use all genes
+USE_IMPORTANT_GENES = (
+    False  # Set to True to use only important genes, False to use all genes
+)
 
 # Classification parameters
 n_seeds = 10
@@ -75,8 +75,13 @@ n_timepoints = 50
 # HELPER FUNCTIONS
 # ============================================================================
 
-def load_classification_data(preprocessed_dir, train_test_split_dir, important_genes_path=None,
-                            use_important_genes=False):
+
+def load_classification_data(
+    preprocessed_dir,
+    train_test_split_dir,
+    important_genes_path=None,
+    use_important_genes=False,
+):
     """
     Load data for classification.
 
@@ -133,14 +138,14 @@ def load_classification_data(preprocessed_dir, train_test_split_dir, important_g
 
     # Prepare data for classification (train set only)
     X_data = data.loc[train_patients, selected_genes]
-    y_data = metadata.loc[train_patients, 'ajcc_pathologic_tumor_stage']
+    y_data = metadata.loc[train_patients, "ajcc_pathologic_tumor_stage"]
 
     logger.info(f"Classification data shape: X={X_data.shape}, y={y_data.shape}")
-    
+
     # Create beautified stage distribution table
     stage_counts = y_data.value_counts().sort_index()
     total = len(y_data)
-    
+
     logger.info("Stage distribution:")
     logger.info("  ┌─────────────┬───────┬────────────┐")
     logger.info("  │ Stage       │ Count │ Percentage │")
@@ -182,12 +187,15 @@ def train_multiple_classifiers(X_data, y_data, n_seeds, output_dir):
     optimized_params = []
 
     # Temporarily reduce logging level to suppress verbose output
-    original_level = logging.getLogger('renalprog.modeling.train').level
-    logging.getLogger('renalprog.modeling.train').setLevel(logging.WARNING)
+    original_level = logging.getLogger("renalprog.modeling.train").level
+    logging.getLogger("renalprog.modeling.train").setLevel(logging.WARNING)
 
     # Train models with clean progress bar
-    pbar = tqdm(seeds, desc="Training classifiers",
-                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
+    pbar = tqdm(
+        seeds,
+        desc="Training classifiers",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+    )
 
     for seed_i in pbar:
         # Update progress description
@@ -196,7 +204,7 @@ def train_multiple_classifiers(X_data, y_data, n_seeds, output_dir):
         result = classification_benchmark(
             X_data=X_data,
             y_data=y_data,
-            classification_type='weighted',
+            classification_type="weighted",
             num_classes=2,
             seed=int(seed_i),
             test_size=0.2,
@@ -215,13 +223,13 @@ def train_multiple_classifiers(X_data, y_data, n_seeds, output_dir):
     pbar.close()
 
     # Restore original logging level
-    logging.getLogger('renalprog.modeling.train').setLevel(original_level)
+    logging.getLogger("renalprog.modeling.train").setLevel(original_level)
 
     # Save train-test splits
     for split, seed in zip(data_splits, seeds):
         X_train, X_test, y_train_split, y_test_split = split
-        y_train_split.to_csv(output_dir / f'y_train_{seed}.csv')
-        y_test_split.to_csv(output_dir / f'y_test_{seed}.csv')
+        y_train_split.to_csv(output_dir / f"y_train_{seed}.csv")
+        y_test_split.to_csv(output_dir / f"y_test_{seed}.csv")
 
     # Save optimized parameters
     df_params = pd.DataFrame(optimized_params, index=seeds)
@@ -236,7 +244,7 @@ def train_multiple_classifiers(X_data, y_data, n_seeds, output_dir):
     results_df.drop(index=even_indices, inplace=True)
     results_df.reset_index(inplace=True, drop=True)
 
-    results_df.to_csv(output_dir / 'classification_results.csv')
+    results_df.to_csv(output_dir / "classification_results.csv")
 
     # Extract column name to avoid backslash in f-string
     cohens_kappa_col = "Cohen's Kappa"
@@ -256,14 +264,14 @@ def plot_metrics(results_df, figures_dir):
     logger.info("Creating metrics visualization...")
 
     # Melt dataframe for plotting
-    df_melted = results_df.melt(var_name='Metric', value_name='Score')
+    df_melted = results_df.melt(var_name="Metric", value_name="Score")
 
     # Create boxplot
     fig = px.box(
         df_melted,
-        x='Metric',
-        y='Score',
-        color='Metric',
+        x="Metric",
+        y="Score",
+        color="Metric",
         notched=False,
         color_discrete_sequence=px.colors.qualitative.Safe,
     )
@@ -276,20 +284,20 @@ def plot_metrics(results_df, figures_dir):
         xaxis=dict(
             title="Score",
             tickfont=dict(size=13),
-            linecolor='black',
+            linecolor="black",
             showgrid=False,
         ),
         yaxis=dict(
             title=None,
             tickfont=dict(size=13),
             range=[0, 1.05],
-            linecolor='black',
-            gridcolor='lightgrey',
+            linecolor="black",
+            gridcolor="lightgrey",
             gridwidth=0.5,
         ),
         showlegend=False,
-        plot_bgcolor='white',
-        paper_bgcolor='white',
+        plot_bgcolor="white",
+        paper_bgcolor="white",
     )
 
     fig.update_traces(
@@ -330,16 +338,16 @@ def save_best_model(models, results_df, seeds, model_dir):
 
     # Save model
     model_dir.mkdir(parents=True, exist_ok=True)
-    model_path = model_dir / 'xgboost_model.json'
+    model_path = model_dir / "xgboost_model.json"
     best_model.save_model(str(model_path))
 
     # Save metadata
     metadata = {
-        'best_model_idx': int(best_model_idx),
-        'best_seed': int(best_seed),
-        'cohens_kappa': float(best_kappa),
+        "best_model_idx": int(best_model_idx),
+        "best_seed": int(best_seed),
+        "cohens_kappa": float(best_kappa),
     }
-    pd.Series(metadata).to_csv(model_dir / 'best_model_metadata.csv')
+    pd.Series(metadata).to_csv(model_dir / "best_model_metadata.csv")
 
     logger.info(f"Best model (index {best_model_idx}, seed {best_seed}) saved")
     logger.info(f"Cohen's Kappa: {best_kappa:.4f}")
@@ -361,12 +369,15 @@ def classify_trajectories_from_files(trajectory_dir, model, selected_genes):
     Returns:
         DataFrame with predictions
     """
-    csv_files = [f for f in trajectory_dir.glob('*.csv')]
+    csv_files = [f for f in trajectory_dir.glob("*.csv")]
 
     predictions_all = []
 
-    pbar = tqdm(csv_files, desc="Classifying trajectories",
-                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
+    pbar = tqdm(
+        csv_files,
+        desc="Classifying trajectories",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+    )
 
     for traj_id, csv_file in enumerate(pbar):
         # Load one trajectory at a time
@@ -382,7 +393,9 @@ def classify_trajectories_from_files(trajectory_dir, model, selected_genes):
                 logger.error("=" * 80)
                 logger.error("GENE MISMATCH ERROR")
                 logger.error("=" * 80)
-                logger.error(f"No common genes found between training and trajectory data!")
+                logger.error(
+                    "No common genes found between training and trajectory data!"
+                )
                 logger.error(f"Training data has {len(selected_genes)} genes")
                 logger.error(f"Trajectory data has {len(df_traj.columns)} genes")
                 logger.error(f"First 10 training genes: {selected_genes[:10]}")
@@ -390,9 +403,13 @@ def classify_trajectories_from_files(trajectory_dir, model, selected_genes):
                 logger.error(f"Training gene types: {type(selected_genes[0])}")
                 logger.error(f"Trajectory gene types: {type(df_traj.columns[0])}")
                 logger.error("=" * 80)
-                raise ValueError("No matching genes between trajectory and training data. Check gene name format!")
+                raise ValueError(
+                    "No matching genes between trajectory and training data. Check gene name format!"
+                )
             elif len(available_genes) < len(selected_genes):
-                logger.warning(f"Only {len(available_genes)}/{len(selected_genes)} genes match")
+                logger.warning(
+                    f"Only {len(available_genes)}/{len(selected_genes)} genes match"
+                )
 
         if len(available_genes) == 0:
             continue
@@ -406,14 +423,10 @@ def classify_trajectories_from_files(trajectory_dir, model, selected_genes):
 
         # Format predictions
         df_pred_i = pd.DataFrame(
-            predictions_i,
-            index=new_data.index,
-            columns=['early', 'late']
+            predictions_i, index=new_data.index, columns=["early", "late"]
         )
         df_pred_i = df_pred_i.melt(
-            value_vars=['early', 'late'],
-            var_name='Stage',
-            value_name='Probability'
+            value_vars=["early", "late"], var_name="Stage", value_name="Probability"
         )
         df_pred_i.insert(0, "Traj_ID", traj_id)
         df_pred_i.insert(1, "Interpol_Index", list(range(n_timepoints)) * 2)
@@ -422,7 +435,9 @@ def classify_trajectories_from_files(trajectory_dir, model, selected_genes):
     pbar.close()
 
     if len(predictions_all) == 0:
-        raise ValueError("No trajectories could be processed. Check gene name matching.")
+        raise ValueError(
+            "No trajectories could be processed. Check gene name matching."
+        )
 
     df_predictions = pd.concat(predictions_all, axis=0)
     logger.info(f"Generated predictions for {len(csv_files)} trajectories")
@@ -447,15 +462,18 @@ def load_trajectory_data(trajectory_dir):
     dfs = []
     t_id = 0
 
-    csv_files = [f for f in trajectory_dir.glob('*.csv')]
+    csv_files = [f for f in trajectory_dir.glob("*.csv")]
 
-    pbar = tqdm(csv_files, desc='Loading trajectories',
-                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
+    pbar = tqdm(
+        csv_files,
+        desc="Loading trajectories",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+    )
 
     for csv_file in pbar:
         df_gene_i = pd.read_csv(csv_file, index_col=0).T
-        df_gene_i.insert(0, 'ID', t_id)
-        df_gene_i.insert(1, 'Trajectory', csv_file.stem)
+        df_gene_i.insert(0, "ID", t_id)
+        df_gene_i.insert(1, "Trajectory", csv_file.stem)
         dfs.append(df_gene_i)
         t_id += 1
 
@@ -481,17 +499,20 @@ def classify_trajectories(traj_gene, model, selected_genes):
     Returns:
         DataFrame with predictions
     """
-    all_traj_ids = traj_gene['ID'].unique()
+    all_traj_ids = traj_gene["ID"].unique()
     predictions_all = []
 
-    pbar = tqdm(all_traj_ids, desc="Classifying trajectories",
-                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
+    pbar = tqdm(
+        all_traj_ids,
+        desc="Classifying trajectories",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+    )
 
     for traj_id in pbar:
-        df_traj = traj_gene[traj_gene['ID'] == traj_id]
+        df_traj = traj_gene[traj_gene["ID"] == traj_id]
 
         # Prepare data
-        new_data = df_traj.drop(['ID', 'Trajectory'], axis=1).T
+        new_data = df_traj.drop(["ID", "Trajectory"], axis=1).T
         new_data = new_data[selected_genes]  # Ensure correct gene order
 
         # Create DMatrix and predict
@@ -500,14 +521,10 @@ def classify_trajectories(traj_gene, model, selected_genes):
 
         # Format predictions
         df_pred_i = pd.DataFrame(
-            predictions_i,
-            index=new_data.index,
-            columns=['early', 'late']
+            predictions_i, index=new_data.index, columns=["early", "late"]
         )
         df_pred_i = df_pred_i.melt(
-            value_vars=['early', 'late'],
-            var_name='Stage',
-            value_name='Probability'
+            value_vars=["early", "late"], var_name="Stage", value_name="Probability"
         )
         df_pred_i.insert(0, "Traj_ID", traj_id)
         df_pred_i.insert(1, "Interpol_Index", list(range(n_timepoints)) * 2)
@@ -534,68 +551,75 @@ def plot_trajectory_classification(df_predictions, save_dir, traj_type):
     # Create boxplot
     fig = px.box(
         df_predictions,
-        x='Interpol_Index',
-        y='Probability',
-        color='Stage',
+        x="Interpol_Index",
+        y="Probability",
+        color="Stage",
         points=False,
-        color_discrete_sequence=['rgba(55, 126, 184, 0.85)', 'rgba(228, 26, 28, 0.85)'],
-        template='ggplot2'
+        color_discrete_sequence=["rgba(55, 126, 184, 0.85)", "rgba(228, 26, 28, 0.85)"],
+        template="ggplot2",
     )
 
     # Calculate and add medians
-    medians = df_predictions.groupby(['Interpol_Index', 'Stage'])['Probability'].median().reset_index()
-    stage_colors = {'early': 'rgba(55, 126, 184, 1)', 'late': 'rgba(228, 26, 28, 1)'}
+    medians = (
+        df_predictions.groupby(["Interpol_Index", "Stage"])["Probability"]
+        .median()
+        .reset_index()
+    )
+    stage_colors = {"early": "rgba(55, 126, 184, 1)", "late": "rgba(228, 26, 28, 1)"}
 
-    for stage in medians['Stage'].unique():
-        stage_medians = medians[medians['Stage'] == stage]
-        delta = -0.2 if stage == 'early' else 0.2
-        fig.add_trace(go.Scatter(
-            x=stage_medians['Interpol_Index'] + delta,
-            y=stage_medians['Probability'],
-            mode='markers',
-            marker=dict(size=10, color=stage_colors[stage], symbol='diamond',
-                       line=dict(color='black', width=1.5)),
-            name=f'{stage} (Median)',
-            showlegend=False
-        ))
+    for stage in medians["Stage"].unique():
+        stage_medians = medians[medians["Stage"] == stage]
+        delta = -0.2 if stage == "early" else 0.2
+        fig.add_trace(
+            go.Scatter(
+                x=stage_medians["Interpol_Index"] + delta,
+                y=stage_medians["Probability"],
+                mode="markers",
+                marker=dict(
+                    size=10,
+                    color=stage_colors[stage],
+                    symbol="diamond",
+                    line=dict(color="black", width=1.5),
+                ),
+                name=f"{stage} (Median)",
+                showlegend=False,
+            )
+        )
 
     # Layout customization
     fig.update_layout(
         width=1600,
         height=600,
-        font=dict(family='Times New Roman', size=24),
+        font=dict(family="Times New Roman", size=24),
         legend=dict(
-            title='Stage',
-            font=dict(size=22),
-            bordercolor='black',
-            borderwidth=1
+            title="Stage", font=dict(size=22), bordercolor="black", borderwidth=1
         ),
         xaxis=dict(
-            title=dict(text='Interpolation Index', font=dict(size=26)),
+            title=dict(text="Interpolation Index", font=dict(size=26)),
             tickfont=dict(size=20),
             showgrid=False,
-            linecolor='black',
+            linecolor="black",
             mirror=True,
             tickvals=list(range(0, n_timepoints)),
-            range=[-0.5, n_timepoints - 0.5]
+            range=[-0.5, n_timepoints - 0.5],
         ),
         yaxis=dict(
-            title=dict(text='Probability', font=dict(size=26)),
+            title=dict(text="Probability", font=dict(size=26)),
             tickfont=dict(size=20),
             showgrid=False,
-            linecolor='black',
-            mirror=True
+            linecolor="black",
+            mirror=True,
         ),
         margin=dict(l=80, r=40, t=20, b=80),
-        title=None
+        title=None,
     )
 
     # Save figure
     save_dir.mkdir(parents=True, exist_ok=True)
-    fig.write_html(save_dir / f'{traj_type}_classification.html')
-    fig.write_image(save_dir / f'{traj_type}_classification.png')
-    fig.write_image(save_dir / f'{traj_type}_classification.pdf', scale=2)
-    fig.write_image(save_dir / f'{traj_type}_classification.svg')
+    fig.write_html(save_dir / f"{traj_type}_classification.html")
+    fig.write_image(save_dir / f"{traj_type}_classification.png")
+    fig.write_image(save_dir / f"{traj_type}_classification.pdf", scale=2)
+    fig.write_image(save_dir / f"{traj_type}_classification.svg")
 
     logger.info(f"Saved {traj_type} classification plots")
 
@@ -604,7 +628,7 @@ def plot_trajectory_classification(df_predictions, save_dir, traj_type):
 # MAIN PIPELINE
 # ============================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger.info("=" * 80)
     logger.info("KIRC CLASSIFICATION PIPELINE - STEP 5")
     logger.info("=" * 80)
@@ -623,22 +647,32 @@ if __name__ == '__main__':
     train_test_split_dir = INTERIM_DATA_DIR / "20251211_train_test_split"
     important_genes_path = EXTERNAL_DATA_DIR / "important_genes_shap.csv"
 
-    X_data, y_data, train_patients, test_patients, selected_genes, description = load_classification_data(
-        preprocessed_dir,
-        train_test_split_dir,
-        important_genes_path,
-        use_important_genes=USE_IMPORTANT_GENES
+    X_data, y_data, train_patients, test_patients, selected_genes, description = (
+        load_classification_data(
+            preprocessed_dir,
+            train_test_split_dir,
+            important_genes_path,
+            use_important_genes=USE_IMPORTANT_GENES,
+        )
     )
 
     # Setup output directories
-    output_dir = INTERIM_DATA_DIR / f"{today}_classification_{cancer_type.lower()}_{description}"
-    figures_dir = REPORTS_DIR / "figures" / f"{today}_classification_{cancer_type.lower()}_{description}"
-    model_dir = MODELS_DIR / f"{today}_classification_{cancer_type.lower()}_{description}"
+    output_dir = (
+        INTERIM_DATA_DIR / f"{today}_classification_{cancer_type.lower()}_{description}"
+    )
+    figures_dir = (
+        REPORTS_DIR
+        / "figures"
+        / f"{today}_classification_{cancer_type.lower()}_{description}"
+    )
+    model_dir = (
+        MODELS_DIR / f"{today}_classification_{cancer_type.lower()}_{description}"
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Save gene lists
-    pd.Series(selected_genes).to_csv(output_dir / 'used_genes.csv')
+    pd.Series(selected_genes).to_csv(output_dir / "used_genes.csv")
 
     # ========================================================================
     # STEP 2: Train Multiple Classifiers
@@ -679,7 +713,13 @@ if __name__ == '__main__':
     # This prevents OOM errors when processing thousands of trajectories.
 
     # Base trajectory directory
-    synthetic_data_dir = PROCESSED_DATA_DIR / f"{today}_synthetic_data" / cancer_type.lower() / "recnet" / "early_to_late"
+    synthetic_data_dir = (
+        PROCESSED_DATA_DIR
+        / f"{today}_synthetic_data"
+        / cancer_type.lower()
+        / "recnet"
+        / "early_to_late"
+    )
     # synthetic_data_dir = PROCESSED_DATA_DIR / f"20251013_synthetic_data" / cancer_type.lower() / "recnet" / "early_to_late" # testing already existing trajectories
 
     # Process train-to-train trajectories
@@ -689,19 +729,19 @@ if __name__ == '__main__':
         logger.info("Processing train-to-train trajectories")
 
         # Use memory-efficient version that processes one file at a time
-        predictions_train = classify_trajectories_from_files(train_traj_dir, best_model, selected_genes)
+        predictions_train = classify_trajectories_from_files(
+            train_traj_dir, best_model, selected_genes
+        )
 
         # Save predictions
-        predictions_train.to_csv(output_dir / 'predictions_train_to_train.csv')
+        predictions_train.to_csv(output_dir / "predictions_train_to_train.csv")
 
         # Plot
         plot_trajectory_classification(
-            predictions_train,
-            figures_dir / "trajectories",
-            "train_to_train"
+            predictions_train, figures_dir / "trajectories", "train_to_train"
         )
     else:
-        logger.warning(f"Train trajectory directory not found")
+        logger.warning("Train trajectory directory not found")
 
     # Process test-to-test trajectories
     test_traj_dir = synthetic_data_dir / "test_to_test"
@@ -710,16 +750,16 @@ if __name__ == '__main__':
         logger.info("Processing test-to-test trajectories")
 
         # Use memory-efficient version that processes one file at a time
-        predictions_test = classify_trajectories_from_files(test_traj_dir, best_model, selected_genes)
+        predictions_test = classify_trajectories_from_files(
+            test_traj_dir, best_model, selected_genes
+        )
 
         # Save predictions
-        predictions_test.to_csv(output_dir / 'predictions_test_to_test.csv')
+        predictions_test.to_csv(output_dir / "predictions_test_to_test.csv")
 
         # Plot
         plot_trajectory_classification(
-            predictions_test,
-            figures_dir / "trajectories",
-            "test_to_test"
+            predictions_test, figures_dir / "trajectories", "test_to_test"
         )
     else:
         logger.warning(f"Test trajectory directory not found: {test_traj_dir}")
@@ -734,4 +774,3 @@ if __name__ == '__main__':
     logger.info(f"Figures saved to: {figures_dir}")
     logger.info(f"Model saved to: {model_dir}")
     logger.info("=" * 80)
-

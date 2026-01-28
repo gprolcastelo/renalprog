@@ -162,7 +162,7 @@ extra_javascript:
 nav:
   - Home: index.md
   - Getting Started:
-      - Installation: getting-started.md
+      - Installation: tutorials/installation.md
       - Quick Start: tutorials/quickstart.md
       - Data Requirements: tutorials/data-requirements.md
   - Tutorials:
@@ -176,13 +176,6 @@ nav:
       - Step 5 - Classification: tutorials/step5-classification.md
       - Step 6 - Enrichment: tutorials/step6-enrichment.md
       - Visualization: tutorials/visualization.md
-  - Reproducibility:
-      - Overview: reproducibility/index.md
-      - System Requirements: reproducibility/requirements.md
-      - Data Preparation: reproducibility/data-preparation.md
-      - Running the Pipeline: reproducibility/pipeline.md
-      - Expected Results: reproducibility/results.md
-      - Troubleshooting: reproducibility/troubleshooting.md
   - API Reference:
       - Overview: api/index.md
       - Configuration: api/config.md
@@ -199,23 +192,13 @@ nav:
       - Visualization: api/plots.md
       - Utilities: api/utils.md
   - Advanced Topics:
-      - Architecture: advanced/architecture.md
-      - Trajectory Generation Details: TRAJECTORIES.md
-      - Classification Details: CLASSIFICATION.md
-      - Enrichment Analysis Details: ENRICHMENT_ANALYSIS.md
-      - Enrichment Quick Reference: ENRICHMENT_QUICK_REF.md
-      - Pathway Heatmap Analysis: PATHWAY_HEATMAP.md
-      - GSEA Installation: GSEA_INSTALLATION.md
-      - R Analysis Scripts: R_ANALYSIS.md
-      - R Integration: advanced/r-integration.md
-      - Custom Models: advanced/custom-models.md
+      - Enrichment Analysis Details: advanced/ENRICHMENT_ANALYSIS.md
+      - Pathway Heatmap Analysis: advanced/PATHWAY_HEATMAP.md
+      - GSEA Installation: advanced/GSEA_INSTALLATION.md
+      - R Analysis Scripts: advanced/R_ANALYSIS.md
       - Performance Tuning: advanced/performance.md
-      - GPU Acceleration: advanced/gpu.md
   - Contributing:
       - Guidelines: contributing/guidelines.md
-      - Development Setup: contributing/development.md
-      - Code Style: contributing/code-style.md
-      - Testing: contributing/testing.md
   - Citation & License:
       - How to Cite: citation.md
       - License: license.md

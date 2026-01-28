@@ -136,7 +136,7 @@ from renalprog.dataset import download_data, process_downloaded_data, create_tra
 from renalprog.features import preprocess_rnaseq
 from renalprog.modeling.train import train_vae
 from renalprog.modeling.predict import apply_vae, generate_trajectories
-from renalprog.plots import plot_training_history, plot_latent_space
+from renalprog.plots import plot_training_history
 
 # ============================================================================
 # Configuration
@@ -259,12 +259,6 @@ def main():
         sep="\t", index_col=0
     )
     
-    plot_latent_space(
-        latent=results['latent'],
-        labels=clinical_test['stage'],
-        output_path=OUTPUT_DIR / "figures" / "latent_space.png",
-        method='umap'
-    )
     
     logger.info("Pipeline completed successfully!")
     logger.info(f"Results saved to {OUTPUT_DIR}")
@@ -400,5 +394,5 @@ with open('config.json', 'w') as f:
 
 - [Configuration API](config.md) - Project configuration
 - [Complete Pipeline Tutorial](../tutorials/complete-pipeline.md)
-- [Contributing Guide](../contributing/development.md)
+- [Contributing Guide](../contributing/guidelines.md)
 

@@ -25,7 +25,7 @@ We acknowledge the following data sources:
 
 - **The Cancer Genome Atlas (TCGA)** for providing the cancer genomics data
 - **Reactome** for pathway annotations
-- **MSigDB** for gene set collections (KEGG pathways)
+- **MSigDB** for gene set collections
 
 ## Open Source Community
 

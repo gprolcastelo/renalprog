@@ -71,44 +71,6 @@ Compare reconstruction losses across samples.
 
 ::: renalprog.plots.plot_reconstruction_losses
 
-### plot_loss_landscape
-
-Visualize loss landscape.
-
-::: renalprog.plots.plot_loss_landscape
-
-## Latent Space Visualization
-
-### plot_latent_space
-
-2D visualization of latent representations.
-
-::: renalprog.plots.plot_latent_space
-
-**Example:**
-
-```python
-from renalprog.plots import plot_latent_space
-from renalprog.modeling.predict import apply_vae
-import pandas as pd
-from pathlib import Path
-
-# Get latent representations
-results = apply_vae(model, data, device='cuda')
-latent = results['latent']
-
-# Load labels
-clinical = pd.read_csv("data/interim/split/test_clinical.tsv", sep="\t", index_col=0)
-
-# Plot latent space colored by stage
-plot_latent_space(
-    latent=latent,
-    labels=clinical['stage'],
-    output_path=Path("reports/figures/latent_space_by_stage.png"),
-    method='umap',  # or 'pca', 'tsne'
-    title="Latent Space Representation"
-)
-```
 
 ### plot_umap_plotly
 
@@ -133,38 +95,6 @@ fig = plot_umap_plotly(
 fig.write_html("reports/figures/latent_space_interactive.html")
 ```
 
-## Gene Expression Visualization
-
-### plot_gene_expression_heatmap
-
-Heatmap of gene expression patterns.
-
-::: renalprog.plots.plot_gene_expression_heatmap
-
-**Example:**
-
-```python
-from renalprog.plots import plot_gene_expression_heatmap
-import pandas as pd
-
-# Load expression data
-expr = pd.read_csv("data/interim/split/test_expression.tsv", sep="\t", index_col=0)
-
-# Select top variable genes
-var = expr.var(axis=0).sort_values(ascending=False)
-top_genes = var.head(50).index
-
-# Plot heatmap
-plot_gene_expression_heatmap(
-    expression=expr[top_genes],
-    row_labels=expr.index.tolist(),
-    col_labels=top_genes.tolist(),
-    output_path=Path("reports/figures/expression_heatmap.png"),
-    cluster_rows=True,
-    cluster_cols=True
-)
-```
-
 ## Trajectory Visualization
 
 ### plot_trajectory
@@ -185,60 +115,6 @@ plot_trajectory(
     output_path=Path("reports/figures/trajectory_001.png"),
     title="Disease Progression Trajectory",
     highlight_genes=['TP53', 'VEGFA', 'HIF1A']
-)
-```
-
-## Enrichment Visualization
-
-### plot_enrichment_results
-
-Visualize pathway enrichment results.
-
-::: renalprog.plots.plot_enrichment_results
-
-**Example:**
-
-```python
-from renalprog.plots import plot_enrichment_results
-import pandas as pd
-
-# Load enrichment results
-enrichment = pd.read_csv("reports/enrichment/combined_results.csv")
-
-# Plot top pathways
-plot_enrichment_results(
-    enrichment_df=enrichment,
-    output_path=Path("reports/figures/enrichment_barplot.png"),
-    top_n=20,
-    metric='fdr',
-    title="Top Enriched Pathways"
-)
-```
-
-## Classification Visualization
-
-### plot_confusion_matrix
-
-Visualize classification performance.
-
-::: renalprog.plots.plot_confusion_matrix
-
-**Example:**
-
-```python
-from renalprog.plots import plot_confusion_matrix
-from sklearn.metrics import confusion_matrix
-
-# After classification
-y_true = test_labels
-y_pred = classifier.predict(test_features)
-cm = confusion_matrix(y_true, y_pred)
-
-plot_confusion_matrix(
-    confusion_matrix=cm,
-    class_names=['Non-progressing', 'Progressing'],
-    output_path=Path("reports/figures/confusion_matrix.png"),
-    normalize=True
 )
 ```
 
@@ -278,8 +154,6 @@ from renalprog.modeling.train import VAE, train_vae
 from renalprog.modeling.predict import apply_vae, generate_trajectories
 from renalprog.plots import (
     plot_training_history,
-    plot_latent_space,
-    plot_gene_expression_heatmap,
     plot_trajectory,
     plot_umap_plotly
 )
@@ -312,13 +186,6 @@ plot_training_history(
 # 3. Encode to latent space and visualize
 results = apply_vae(model, test_expr.values, device='cuda')
 
-plot_latent_space(
-    latent=results['latent'],
-    labels=clinical['stage'],
-    output_path=output_dir / "latent_space_umap.png",
-    method='umap'
-)
-
 plot_umap_plotly(
     latent=results['latent'],
     labels=clinical['stage'],
@@ -326,20 +193,8 @@ plot_umap_plotly(
     title="Interactive Latent Space"
 ).write_html(output_dir / "latent_space_interactive.html")
 
-# 4. Plot expression heatmap
-var = test_expr.var(axis=0).sort_values(ascending=False)
-top_genes = var.head(50).index
 
-plot_gene_expression_heatmap(
-    expression=test_expr[top_genes],
-    row_labels=test_expr.index.tolist(),
-    col_labels=top_genes.tolist(),
-    output_path=output_dir / "expression_heatmap.png",
-    cluster_rows=True,
-    cluster_cols=True
-)
-
-# 5. Generate and plot trajectories
+# 4. Generate and plot trajectories
 early_mask = clinical['stage'] == 'early'
 late_mask = clinical['stage'] == 'late'
 
@@ -360,50 +215,6 @@ plot_trajectory(
 )
 
 print(f"All figures saved to {output_dir}")
-```
-
-## Customization
-
-All plotting functions accept matplotlib/plotly parameters for customization:
-
-```python
-from renalprog.plots import plot_latent_space
-
-plot_latent_space(
-    latent=latent,
-    labels=labels,
-    output_path=output_path,
-    figsize=(12, 8),         # Custom figure size
-    cmap='viridis',          # Custom colormap
-    alpha=0.6,               # Transparency
-    s=50,                    # Point size
-    title="Custom Title",
-    xlabel="Component 1",
-    ylabel="Component 2"
-)
-```
-
-## Publication-Quality Figures
-
-For publication:
-
-```python
-import matplotlib.pyplot as plt
-plt.rcParams.update({
-    'font.size': 12,
-    'font.family': 'sans-serif',
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'savefig.bbox': 'tight',
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'legend.fontsize': 12
-})
-
-# Then use plotting functions
-plot_latent_space(...)
 ```
 
 ## See Also

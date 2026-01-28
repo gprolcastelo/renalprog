@@ -57,23 +57,34 @@ cat("---------------------------------------------------------------------------
 cran_packages <- c(
   "gprofiler2",  # For g:Profiler enrichment analysis
   "ggplot2",     # For plotting
-  "optparse"     # For command-line argument parsing
+  "optparse",    # For command-line argument parsing
+  "dplyr",       # For data manipulation
+  "effsize"      # For effect size calculations (Cohen's d)
 )
 
 cran_success <- sapply(cran_packages, function(pkg) {
   install_if_missing(pkg, source = "CRAN")
 })
 
-# ==============================================================================
-# Summary
-# ==============================================================================
+cat("\nInstalling Bioconductor packages...\n")
+cat("--------------------------------------------------------------------------------\n")
+
+# Bioconductor packages
+bioc_packages <- c(
+  "limma",   # For linear models in microarray data
+  "edgeR"    # For differential expression analysis
+)
+
+bioc_success <- sapply(bioc_packages, function(pkg) {
+  install_if_missing(pkg, source = "Bioconductor")
+})
 
 cat("\n================================================================================\n")
 cat("Installation Summary\n")
 cat("================================================================================\n")
 
-all_packages <- c(cran_packages)
-all_success <- c(cran_success)
+all_packages <- c(cran_packages, bioc_packages)
+all_success <- c(cran_success, bioc_success)
 
 cat(sprintf("\nTotal packages: %d\n", length(all_packages)))
 cat(sprintf("Successfully installed: %d\n", sum(all_success)))
@@ -89,7 +100,9 @@ if (sum(!all_success) > 0) {
   quit(status = 1)
 } else {
   cat("\n✓ All R dependencies installed successfully!\n")
-  cat("\nYou can now run: Rscript scripts/r_analysis/gene_enrichment.R\n")
+  cat("\nYou can now run:\n")
+  cat("  Rscript scripts/r_analysis/gene_enrichment.R\n")
+  cat("  Rscript scripts/r_analysis/differential_expression.R\n")
 }
 
 cat("================================================================================\n")

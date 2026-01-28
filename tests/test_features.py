@@ -5,7 +5,6 @@ Test features module functionality.
 import pytest
 import pandas as pd
 import numpy as np
-from pathlib import Path
 
 from renalprog.features import (
     filter_low_expression,
@@ -41,7 +40,7 @@ def test_filter_low_expression(sample_expression_data):
         sample_expression_data,
         mean_threshold=0.5,
         var_threshold=0.5,
-        min_sample_fraction=0.5  # Gene must be expressed in 50% of samples
+        min_sample_fraction=0.5,  # Gene must be expressed in 50% of samples
     )
 
     # Should filter out roughly half the genes (the lowly expressed ones)
@@ -54,13 +53,12 @@ def test_detect_outliers_mahalanobis(sample_expression_data):
     """Test Mahalanobis outlier detection."""
     # Add some outliers
     data_with_outliers = sample_expression_data.copy()
-    data_with_outliers.iloc[:, -2:] = data_with_outliers.iloc[:, -2:] * 100  # Make last 2 samples outliers
+    data_with_outliers.iloc[:, -2:] = (
+        data_with_outliers.iloc[:, -2:] * 100
+    )  # Make last 2 samples outliers
 
     cleaned, outlier_ids, distances = detect_outliers_mahalanobis(
-        data_with_outliers,
-        alpha=0.05,
-        support_fraction=0.75,
-        transpose=True
+        data_with_outliers, alpha=0.05, support_fraction=0.75, transpose=True
     )
 
     # Should remove some outliers
@@ -88,12 +86,14 @@ def test_preprocess_rnaseq(sample_expression_data):
         min_sample_fraction=0.5,
         alpha=0.05,
         support_fraction=0.5,  # Use smaller support_fraction to avoid MCD issues
-        transpose=True  # Transpose for outlier detection on samples
+        transpose=True,  # Transpose for outlier detection on samples
     )
 
     # Check that data was processed
     assert processed.shape[0] <= data_with_outliers.shape[0]  # Genes may be filtered
-    assert processed.shape[1] <= data_with_outliers.shape[1]  # Samples possibly filtered
+    assert (
+        processed.shape[1] <= data_with_outliers.shape[1]
+    )  # Samples possibly filtered
 
     # Check metadata
     assert "original_shape" in metadata
@@ -109,7 +109,7 @@ def test_preprocess_no_outlier_detection(sample_expression_data):
         filter_expression=True,
         detect_outliers=False,
         mean_threshold=0.5,
-        var_threshold=0.5
+        var_threshold=0.5,
     )
 
     # Should keep all samples
@@ -123,16 +123,12 @@ def test_filter_low_expression_no_filtering():
     data = pd.DataFrame(
         np.random.rand(10, 20) * 10 + 5,
         index=[f"GENE_{i}" for i in range(10)],
-        columns=[f"SAMPLE_{i}" for i in range(20)]
+        columns=[f"SAMPLE_{i}" for i in range(20)],
     )
 
     filtered = filter_low_expression(
-        data,
-        mean_threshold=0.5,
-        var_threshold=0.5,
-        min_sample_fraction=0.1
+        data, mean_threshold=0.5, var_threshold=0.5, min_sample_fraction=0.1
     )
 
     # Should keep all genes
     assert filtered.shape == data.shape
-

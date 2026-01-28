@@ -5,7 +5,6 @@ Shared test fixtures and utilities.
 import pytest
 import pandas as pd
 import numpy as np
-from pathlib import Path
 
 
 @pytest.fixture
@@ -19,16 +18,26 @@ def tiny_dataset():
     samples = [f"TCGA-TEST-{i:02d}" for i in range(10)]
 
     # Create expression data with some structure
-    data = pd.DataFrame(
-        np.random.randn(50, 10) * 2 + 5,
-        index=genes,
-        columns=samples
-    )
+    data = pd.DataFrame(np.random.randn(50, 10) * 2 + 5, index=genes, columns=samples)
 
     # Create clinical data with stages
-    clinical = pd.DataFrame({
-        "ajcc_pathologic_tumor_stage": ["Stage I", "Stage I", "Stage II", "Stage II", "Stage III", "Stage III", "Stage IV", "Stage IV", "Stage I", "Stage IV"]
-    }, index=samples)
+    clinical = pd.DataFrame(
+        {
+            "ajcc_pathologic_tumor_stage": [
+                "Stage I",
+                "Stage I",
+                "Stage II",
+                "Stage II",
+                "Stage III",
+                "Stage III",
+                "Stage IV",
+                "Stage IV",
+                "Stage I",
+                "Stage IV",
+            ]
+        },
+        index=samples,
+    )
 
     return data, clinical
 
@@ -44,17 +53,13 @@ def small_dataset():
     samples = [f"TCGA-TEST-{i:03d}" for i in range(50)]
 
     # Create expression data
-    data = pd.DataFrame(
-        np.random.randn(200, 50) * 2 + 5,
-        index=genes,
-        columns=samples
-    )
+    data = pd.DataFrame(np.random.randn(200, 50) * 2 + 5, index=genes, columns=samples)
 
     # Create clinical data with balanced stages
-    stages = ["Stage I"] * 12 + ["Stage II"] * 13 + ["Stage III"] * 12 + ["Stage IV"] * 13
-    clinical = pd.DataFrame({
-        "ajcc_pathologic_tumor_stage": stages
-    }, index=samples)
+    stages = (
+        ["Stage I"] * 12 + ["Stage II"] * 13 + ["Stage III"] * 12 + ["Stage IV"] * 13
+    )
+    clinical = pd.DataFrame({"ajcc_pathologic_tumor_stage": stages}, index=samples)
 
     return data, clinical
 
@@ -64,7 +69,6 @@ def mock_vae_model():
     """
     Create a mock VAE model for testing.
     """
-    import torch
     import torch.nn as nn
 
     class MockVAE(nn.Module):
@@ -77,8 +81,8 @@ def mock_vae_model():
 
         def forward(self, x):
             encoded = self.encoder(x)
-            mu = encoded[:, :self.latent_dim]
-            logvar = encoded[:, self.latent_dim:]
+            mu = encoded[:, : self.latent_dim]
+            logvar = encoded[:, self.latent_dim :]
             z = mu  # Simplified, no reparameterization for testing
             reconstruction = self.decoder(z)
             return reconstruction, mu, logvar, z
@@ -98,4 +102,3 @@ def temp_data_dir(tmp_path):
     (data_dir / "external").mkdir(parents=True)
 
     return data_dir
-

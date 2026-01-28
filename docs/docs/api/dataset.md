@@ -6,16 +6,68 @@ The `dataset` module provides functions for downloading, loading, and preparing 
 
 This module handles:
 
-- Downloading TCGA Pan-Cancer Atlas data
+- Downloading preprocessed data from Zenodo (fastest way to get started!)
+- Downloading raw TCGA Pan-Cancer Atlas data
 - Processing and filtering by cancer type
 - Creating train/test splits
 - Loading preprocessed data for modeling
 
+!!! tip "Quick Start"
+    Use `download_preprocessed_from_zenodo()` to quickly download ready-to-use datasets from Zenodo. This bypasses all preprocessing steps!
+    Otherwise, use `download_data()` and `process_downloaded_data()` to process raw TCGA data with custom parameters.
+
 ## Core Functions
+
+### download_preprocessed_from_zenodo
+
+Download preprocessed RNAseq and clinical data directly from Zenodo repositories.
+
+::: renalprog.dataset.download_preprocessed_from_zenodo
+
+**Example Usage:**
+
+```python
+from renalprog.dataset import download_preprocessed_from_zenodo
+from pathlib import Path
+
+# Download preprocessed KIRC data
+rnaseq, clinical = download_preprocessed_from_zenodo(
+    rnaseq_url='https://zenodo.org/records/17987300/files/Static_KIRC.csv?download=1',
+    clinical_url='https://zenodo.org/records/17987300/files/nodes_metadata.csv?download=1',
+    output_dir=Path('data/interim/preprocessed_KIRC_data')
+)
+
+print(f"RNAseq shape: {rnaseq.shape}")
+print(f"Clinical shape: {clinical.shape}")
+
+# Download preprocessed BRCA data
+rnaseq_brca, clinical_brca = download_preprocessed_from_zenodo(
+    rnaseq_url='https://zenodo.org/records/17986123/files/Static_BRCA.csv?download=1',
+    clinical_url='https://zenodo.org/records/17986123/files/nodes_metadata.csv?download=1',
+    output_dir=Path('data/interim/preprocessed_BRCA_data')
+)
+```
+
+**Available Zenodo Datasets:**
+
+| Cancer Type | Zenodo Record | RNAseq File | Clinical File |
+|-------------|---------------|-------------|---------------|
+| **KIRC** (Kidney) | [17987300](https://zenodo.org/records/17987300) | `Static_KIRC.csv` | `nodes_metadata.csv` |
+| **BRCA** (Breast) | [17986123](https://zenodo.org/records/17986123) | `Static_BRCA.csv` | `nodes_metadata.csv` |
+
+!!! tip "Quick Start"
+    This is the fastest way to get started! The data is already preprocessed, normalized, and ready for modeling.
+
+!!! info "What's Included"
+    - **RNAseq Data**: Log2-transformed, normalized gene expression matrix
+    - **Clinical Data**: Patient metadata including stage, survival, demographics
+    - **Automatic Validation**: Function checks sample overlap and data integrity
+
+---
 
 ### download_data
 
-Download KIRC datasets from TCGA Pan-Cancer Atlas.
+Download raw TCGA datasets from UCSC Xena (TCGA data).
 
 ::: renalprog.dataset.download_data
 
@@ -207,7 +259,30 @@ print(test_dist)
 
 ## Data Preprocessing Pipeline
 
-The standard preprocessing pipeline:
+### Option 1: Quick Start with Zenodo
+
+Download preprocessed data directly from Zenodo - no preprocessing needed!
+
+```python
+from pathlib import Path
+from renalprog.dataset import download_preprocessed_from_zenodo
+
+# Download and you're ready to go!
+rnaseq, clinical = download_preprocessed_from_zenodo(
+    rnaseq_url='https://zenodo.org/records/17987300/files/Static_KIRC.csv?download=1',
+    clinical_url='https://zenodo.org/records/17987300/files/nodes_metadata.csv?download=1',
+    output_dir=Path('data/interim/preprocessed_KIRC_data')
+)
+
+# Data is already preprocessed and ready for modeling
+print(f"Ready to use: {rnaseq.shape[0]:,} genes × {rnaseq.shape[1]:,} samples")
+```
+
+---
+
+### Option 2: Custom Preprocessing Pipeline (Advanced)
+
+The standard preprocessing pipeline for raw TCGA data:
 
 1. **Download raw data** from TCGA
 2. **Filter by cancer type** (e.g., KIRC)

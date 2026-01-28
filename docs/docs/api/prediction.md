@@ -49,55 +49,7 @@ reconstructed = results['reconstructed']  # Reconstructed expression
 print(f"Latent space shape: {latent.shape}")
 ```
 
-## Trajectory Generation
 
-### generate_trajectories
-
-Generate disease progression trajectories by interpolating in latent space.
-
-::: renalprog.modeling.predict.generate_trajectories
-
-**Example Usage:**
-
-```python
-from renalprog.modeling.predict import generate_trajectories
-
-# Generate trajectories from early to late stage
-trajectories = generate_trajectories(
-    model=model,
-    start_data=early_stage_samples.values,
-    end_data=late_stage_samples.values,
-    n_steps=50,
-    interpolation='spherical',
-    device='cuda'
-)
-
-# trajectories shape: (n_samples, n_steps, n_genes)
-print(f"Generated {trajectories.shape[0]} trajectories")
-print(f"Each with {trajectories.shape[1]} steps")
-```
-
-### create_patient_connections
-
-Create optimal patient pairings for trajectory generation.
-
-::: renalprog.modeling.predict.create_patient_connections
-
-**Example Usage:**
-
-```python
-from renalprog.modeling.predict import create_patient_connections
-
-# Find optimal patient connections
-connections = create_patient_connections(
-    latent_early=early_latent,
-    latent_late=late_latent,
-    method='closest',  # or 'random'
-    output_path=Path("data/processed/patient_connections.csv")
-)
-
-print(f"Created {len(connections)} patient pairs")
-```
 
 ### interpolate_latent_linear
 
@@ -240,11 +192,10 @@ from pathlib import Path
 from renalprog.modeling.train import VAE
 from renalprog.modeling.predict import (
     apply_vae,
-    create_patient_connections,
     generate_trajectories,
     evaluate_reconstruction
 )
-from renalprog.plots import plot_latent_space, plot_trajectory
+from renalprog.plots import  plot_trajectory
 
 # Load model and data
 model = VAE(input_dim=20000, mid_dim=1024, features=128)
@@ -258,23 +209,9 @@ clinical = pd.read_csv("data/interim/split/test_clinical.tsv", sep="\t", index_c
 train_results = apply_vae(model, train_expr.values, device='cuda')
 test_results = apply_vae(model, test_expr.values, device='cuda')
 
-# Visualize latent space
-plot_latent_space(
-    latent=test_results['latent'],
-    labels=clinical['stage'],
-    output_path=Path("reports/figures/latent_space.png")
-)
-
 # Create patient connections
 early_mask = clinical['stage'] == 'early'
 late_mask = clinical['stage'] == 'late'
-
-connections = create_patient_connections(
-    latent_early=test_results['latent'][early_mask],
-    latent_late=test_results['latent'][late_mask],
-    method='closest',
-    output_path=Path("data/processed/connections.csv")
-)
 
 # Generate trajectories
 trajectories = generate_trajectories(

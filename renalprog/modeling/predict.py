@@ -24,8 +24,6 @@ from typing import List, Tuple, Optional, Dict, Any
 import logging
 from sklearn.preprocessing import MinMaxScaler
 
-from renalprog.config import TrajectoryConfig
-from renalprog.utils import set_seed
 
 import os
 from tqdm import tqdm
@@ -40,145 +38,41 @@ logger = logging.getLogger(__name__)
 
 
 def apply_vae(
-    model: torch.nn.Module,
-    data: pd.DataFrame,
-    device: str = "cpu"
+    model: torch.nn.Module, data: pd.DataFrame, device: str = "cpu"
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Apply VAE to data to get reconstruction and latent representation.
-    
+
     Args:
         model: Trained VAE model
         data: Input data (samples x genes)
         device: Device to run inference on
-        
+
     Returns:
         Tuple of (reconstruction, mu, logvar, z)
     """
     model.eval()
     model = model.to(device)
-    
+
     # Convert to tensor
     if isinstance(data, pd.DataFrame):
         data_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
     else:
         data_tensor = torch.tensor(data, dtype=torch.float32).to(device)
-    
+
     with torch.no_grad():
         reconstruction, mu, logvar, z = model(data_tensor)
-    
+
     # Convert back to numpy
     reconstruction = reconstruction.cpu().numpy()
     mu = mu.cpu().numpy()
     logvar = logvar.cpu().numpy() if logvar is not None else None
     z = z.cpu().numpy()
-    
+
     return reconstruction, mu, logvar, z
 
 
-def generate_trajectories(
-    model: torch.nn.Module,
-    source_samples: pd.DataFrame,
-    target_samples: pd.DataFrame,
-    n_steps: int = 50,
-    method: str = "linear",
-    output_dir: Optional[Path] = None,
-    parallel: bool = False,
-    n_workers: Optional[int] = None
-) -> Dict[str, pd.DataFrame]:
-    """
-    Generate synthetic trajectories between source and target patient samples.
-    
-    This function creates interpolated gene expression profiles in the latent
-    space between pairs of patients at different cancer stages.
-    
-    Args:
-        model: Trained VAE model
-        source_samples: Source patient samples (early stage)
-        target_samples: Target patient samples (late stage)
-        n_steps: Number of interpolation steps
-        method: Interpolation method ("linear" or "spherical")
-        output_dir: Optional directory to save trajectories
-        parallel: Whether to use parallel processing
-        n_workers: Number of parallel workers (None = use all CPUs)
-        
-    Returns:
-        Dictionary mapping patient pairs to trajectory DataFrames
-    """
-    logger.info(f"Generating trajectories with {n_steps} steps using {method} interpolation")
-    
-    # TODO: Implement trajectory generation
-    # Migrate from src_deseq_and_gsea_NCSR/synthetic_data_generation.py
-    
-    raise NotImplementedError(
-        "generate_trajectories() needs implementation from "
-        "src_deseq_and_gsea_NCSR/synthetic_data_generation.py and "
-        "src/data/fun_interpol.py"
-    )
 
-def create_patient_connections(
-    data: pd.DataFrame,
-    clinical: pd.Series,
-    method: str = "random",
-    transition_type: str = "early_to_late",
-    n_connections: Optional[int] = None,
-    seed: int = 2023
-) -> pd.DataFrame:
-    """
-    Create connections between patients for trajectory generation.
-    
-    Args:
-        data: Gene expression data
-        clinical: Clinical stage information
-        method: Method for creating connections ("random", "nearest", "all")
-        transition_type: Type of transition ("early_to_late", "early_to_early", etc.)
-        n_connections: Number of connections to create (None = all possible)
-        seed: Random seed
-        
-    Returns:
-        DataFrame with columns: source, target, transition
-    """
-    logger.info(f"Creating patient connections: {transition_type} using {method} method")
-    
-    # TODO: Implement connection logic
-    # Migrate from notebooks/4_1_trajectories.ipynb
-    
-    raise NotImplementedError(
-        "create_patient_connections() needs implementation from "
-        "notebooks/4_1_trajectories.ipynb"
-    )
-
-
-def generate_control_trajectories(
-    data: pd.DataFrame,
-    n_samples: int = 50,
-    noise_type: str = "gaussian",
-    noise_level: float = 0.1,
-    output_dir: Optional[Path] = None
-) -> pd.DataFrame:
-    """
-    Generate control trajectories by adding noise to real data.
-    
-    Args:
-        data: Real gene expression data
-        n_samples: Number of noisy samples to generate
-        noise_type: Type of noise ("gaussian", "uniform")
-        noise_level: Standard deviation of noise
-        output_dir: Optional directory to save controls
-        
-    Returns:
-        DataFrame with control trajectory data
-    """
-    logger.info(f"Generating control trajectories with {noise_type} noise (level={noise_level})")
-    
-    # TODO: Implement control generation
-    # Migrate from src_deseq_and_gsea_NCSR/create_controls.py
-    
-    raise NotImplementedError(
-        "generate_control_trajectories() needs implementation from "
-        "src_deseq_and_gsea_NCSR/create_controls.py and "
-        "src_deseq_and_gsea_NCSR/generate_control_trajectories.py"
-    )
 
 def get_metadata(test_path: Path) -> Dict[str, Any]:
     """
@@ -222,10 +116,10 @@ def get_metadata(test_path: Path) -> Dict[str, Any]:
         folder_name=str(test_path.parent),
         file_names=[test_path.name],
         read_csv_parameters={
-            'index_col': 0,        # Use first column as index, not as feature
-            'parse_dates': False,  # Don't parse dates (all numeric gene expression)
-            'encoding': 'latin-1'  # Standard encoding for CSV files
-        }
+            "index_col": 0,  # Use first column as index, not as feature
+            "parse_dates": False,  # Don't parse dates (all numeric gene expression)
+            "encoding": "latin-1",  # Standard encoding for CSV files
+        },
     )
 
     # Auto-detect metadata from the loaded data
@@ -233,17 +127,18 @@ def get_metadata(test_path: Path) -> Dict[str, Any]:
 
     # Extract table-specific metadata (removes wrapper structure)
     # The key 'X_test' matches the filename without extension
-    metadata_use = metadata.to_dict()['tables']['X_test']
+    metadata_use = metadata.to_dict()["tables"]["X_test"]
 
     logger.info(f"Extracted metadata for {len(metadata_use['columns'])} genes")
 
     return metadata_use
 
+
 def diagnostic_metrics(
     real_data: pd.DataFrame,
     synthetic_data: pd.DataFrame,
     save_path_data: Path,
-    save_path_figures: Optional[Path] = None
+    save_path_figures: Optional[Path] = None,
 ) -> pd.Series:
     """
     Calculate diagnostic metrics to assess synthetic data quality.
@@ -282,26 +177,27 @@ def diagnostic_metrics(
     logger.info("=" * 60)
     logger.info("DIAGNOSTIC METRICS: Boundary Adherence")
     logger.info("=" * 60)
-    logger.info(f"Evaluating {real_data.shape[1]} genes across {real_data.shape[0]} samples")
+    logger.info(
+        f"Evaluating {real_data.shape[1]} genes across {real_data.shape[0]} samples"
+    )
 
     # Calculate boundary adherence for each gene
     # This measures what percentage of synthetic values fall within the
     # [min, max] range observed in the real data
     ba_dict = {}
 
-    for gene_i in tqdm(real_data.columns, desc='Computing Boundary Adherence'):
+    for gene_i in tqdm(real_data.columns, desc="Computing Boundary Adherence"):
         # Compute metric: % of synthetic values within [min, max] of real values
         ba_i = BoundaryAdherence.compute(
-            real_data=real_data[gene_i],
-            synthetic_data=synthetic_data[gene_i]
+            real_data=real_data[gene_i], synthetic_data=synthetic_data[gene_i]
         )
         ba_dict[gene_i] = ba_i
 
     # Convert to Series for easy analysis
-    df_ba = pd.Series(ba_dict, name='boundary_adherence')
+    df_ba = pd.Series(ba_dict, name="boundary_adherence")
 
     # Save results
-    output_csv = os.path.join(save_path_data, 'boundary_adherence_per_gene.csv')
+    output_csv = os.path.join(save_path_data, "boundary_adherence_per_gene.csv")
     df_ba.to_csv(output_csv)
     logger.info(f"Saved results to: {output_csv}")
 
@@ -310,7 +206,9 @@ def diagnostic_metrics(
     logger.info(f"Median Boundary Adherence: {df_ba.median():.4f}")
     logger.info(f"Min Boundary Adherence: {df_ba.min():.4f}")
     logger.info(f"Max Boundary Adherence: {df_ba.max():.4f}")
-    logger.info(f"Genes with perfect adherence (1.0): {(df_ba == 1.0).sum()}/{len(df_ba)} ({100*(df_ba == 1.0).sum()/len(df_ba):.1f}%)")
+    logger.info(
+        f"Genes with perfect adherence (1.0): {(df_ba == 1.0).sum()}/{len(df_ba)} ({100 * (df_ba == 1.0).sum() / len(df_ba):.1f}%)"
+    )
 
     # Generate visualizations if output directory provided
     if save_path_figures is not None:
@@ -319,25 +217,27 @@ def diagnostic_metrics(
         # Create interactive histogram
         fig = px.histogram(
             df_ba,
-            x='boundary_adherence',
+            x="boundary_adherence",
             nbins=50,
-            title='Distribution of Boundary Adherence Scores per Gene',
-            labels={'boundary_adherence': 'Boundary Adherence Score'},
-            template='plotly_white'
+            title="Distribution of Boundary Adherence Scores per Gene",
+            labels={"boundary_adherence": "Boundary Adherence Score"},
+            template="plotly_white",
         )
         fig.update_layout(
-            xaxis_title='Boundary Adherence Score',
-            yaxis_title='Number of Genes',
-            showlegend=False
+            xaxis_title="Boundary Adherence Score",
+            yaxis_title="Number of Genes",
+            showlegend=False,
         )
 
         # Save in multiple formats
-        html_path = os.path.join(save_path_figures, 'boundary_adherence_per_gene.html')
+        html_path = os.path.join(save_path_figures, "boundary_adherence_per_gene.html")
         fig.write_html(html_path)
         logger.info(f"  Saved interactive plot: {html_path}")
 
-        for format_ext in ['png', 'pdf', 'svg']:
-            img_path = os.path.join(save_path_figures, f'boundary_adherence_per_gene.{format_ext}')
+        for format_ext in ["png", "pdf", "svg"]:
+            img_path = os.path.join(
+                save_path_figures, f"boundary_adherence_per_gene.{format_ext}"
+            )
             fig.write_image(img_path, scale=2)
             logger.info(f"  Saved {format_ext.upper()} plot: {img_path}")
 
@@ -346,12 +246,13 @@ def diagnostic_metrics(
 
     return df_ba
 
+
 def quality_metrics(
     real_data: pd.DataFrame,
     synthetic_data: pd.DataFrame,
     metadata: Dict[str, Any],
     save_path_data: Path,
-    save_path_figures: Optional[Path] = None
+    save_path_figures: Optional[Path] = None,
 ) -> pd.Series:
     """
     Calculate quality metrics to assess synthetic data fidelity.
@@ -402,8 +303,6 @@ def quality_metrics(
     import os
     from tqdm import tqdm
     import plotly.express as px
-    from sdmetrics.reports.single_table import QualityReport
-    from sdmetrics.single_column import KSComplement
 
     logger.info("=" * 60)
     logger.info("QUALITY METRICS: Distribution Similarity")
@@ -418,7 +317,7 @@ def quality_metrics(
     q_report.generate(real_data, synthetic_data, metadata)
 
     # Save quality report object for later analysis
-    report_path = os.path.join(save_path_data, 'quality_report.pkl')
+    report_path = os.path.join(save_path_data, "quality_report.pkl")
     q_report.save(report_path)
     logger.info(f"Saved quality report to: {report_path}")
 
@@ -432,20 +331,19 @@ def quality_metrics(
     logger.info(f"Computing KS Complement for {real_data.shape[1]} genes...")
 
     ks_dict = {}
-    for gene_i in tqdm(real_data.columns, desc='Computing KS Complement'):
+    for gene_i in tqdm(real_data.columns, desc="Computing KS Complement"):
         # KS Complement measures how similar the empirical cumulative distribution functions are
         # Higher values mean the distributions are more similar
         ks_i = KSComplement.compute(
-            real_data=real_data[gene_i],
-            synthetic_data=synthetic_data[gene_i]
+            real_data=real_data[gene_i], synthetic_data=synthetic_data[gene_i]
         )
         ks_dict[gene_i] = ks_i
 
     # Convert to Series for analysis
-    df_ks = pd.Series(ks_dict, name='ks_complement')
+    df_ks = pd.Series(ks_dict, name="ks_complement")
 
     # Save results
-    output_csv = os.path.join(save_path_data, 'ks_complement_per_gene.csv')
+    output_csv = os.path.join(save_path_data, "ks_complement_per_gene.csv")
     df_ks.to_csv(output_csv)
     logger.info(f"Saved results to: {output_csv}")
 
@@ -454,7 +352,9 @@ def quality_metrics(
     logger.info(f"Median KS Complement: {df_ks.median():.4f}")
     logger.info(f"Min KS Complement: {df_ks.min():.4f}")
     logger.info(f"Max KS Complement: {df_ks.max():.4f}")
-    logger.info(f"Genes with KS > 0.9: {(df_ks > 0.9).sum()}/{len(df_ks)} ({100*(df_ks > 0.9).sum()/len(df_ks):.1f}%)")
+    logger.info(
+        f"Genes with KS > 0.9: {(df_ks > 0.9).sum()}/{len(df_ks)} ({100 * (df_ks > 0.9).sum() / len(df_ks):.1f}%)"
+    )
 
     # Generate visualizations if output directory provided
     if save_path_figures is not None:
@@ -463,16 +363,16 @@ def quality_metrics(
         # Create interactive histogram
         fig = px.histogram(
             df_ks,
-            x='ks_complement',
+            x="ks_complement",
             nbins=50,
-            title='Distribution of KS Complement Scores per Gene',
-            labels={'ks_complement': 'KS Complement Score'},
-            template='plotly_white'
+            title="Distribution of KS Complement Scores per Gene",
+            labels={"ks_complement": "KS Complement Score"},
+            template="plotly_white",
         )
         fig.update_layout(
-            xaxis_title='KS Complement Score (Distribution Similarity)',
-            yaxis_title='Number of Genes',
-            showlegend=False
+            xaxis_title="KS Complement Score (Distribution Similarity)",
+            yaxis_title="Number of Genes",
+            showlegend=False,
         )
 
         # Add reference line at 0.9 (high quality threshold)
@@ -480,16 +380,18 @@ def quality_metrics(
             x=0.9,
             line_dash="dash",
             line_color="red",
-            annotation_text="High Quality (0.9)"
+            annotation_text="High Quality (0.9)",
         )
 
         # Save in multiple formats
-        html_path = os.path.join(save_path_figures, 'ks_complement_per_gene.html')
+        html_path = os.path.join(save_path_figures, "ks_complement_per_gene.html")
         fig.write_html(html_path)
         logger.info(f"  Saved interactive plot: {html_path}")
 
-        for format_ext in ['png', 'pdf', 'svg']:
-            img_path = os.path.join(save_path_figures, f'ks_complement_per_gene.{format_ext}')
+        for format_ext in ["png", "pdf", "svg"]:
+            img_path = os.path.join(
+                save_path_figures, f"ks_complement_per_gene.{format_ext}"
+            )
             fig.write_image(img_path, scale=2)
             logger.info(f"  Saved {format_ext.upper()} plot: {img_path}")
 
@@ -497,6 +399,7 @@ def quality_metrics(
     logger.info("=" * 60)
 
     return df_ks
+
 
 def evaluate_reconstruction(
     real_data: pd.DataFrame,
@@ -603,7 +506,7 @@ def evaluate_reconstruction(
         real_data=real_data,
         synthetic_data=synthetic_data,
         save_path_data=save_path_data,
-        save_path_figures=save_path_figures
+        save_path_figures=save_path_figures,
     )
 
     # Step 3: Compute quality metrics
@@ -613,21 +516,43 @@ def evaluate_reconstruction(
         synthetic_data=synthetic_data,
         metadata=metadata_sd,
         save_path_data=save_path_data,
-        save_path_figures=save_path_figures
+        save_path_figures=save_path_figures,
     )
 
     # Final summary
     logger.info("\n" + "=" * 80)
     logger.info("EVALUATION COMPLETE - SUMMARY")
     logger.info("=" * 80)
-    logger.info(f"Boundary Adherence - Mean: {df_ba.mean():.4f}, Median: {df_ba.median():.4f}")
-    logger.info(f"KS Complement      - Mean: {df_ks.mean():.4f}, Median: {df_ks.median():.4f}")
+    logger.info(
+        f"Boundary Adherence - Mean: {df_ba.mean():.4f}, Median: {df_ba.median():.4f}"
+    )
+    logger.info(
+        f"KS Complement      - Mean: {df_ks.mean():.4f}, Median: {df_ks.median():.4f}"
+    )
 
     # Quality assessment
-    ba_quality = "Excellent" if df_ba.mean() > 0.99 else "Good" if df_ba.mean() > 0.95 else "Fair" if df_ba.mean() > 0.90 else "Poor"
-    ks_quality = "Excellent" if df_ks.mean() > 0.90 else "Good" if df_ks.mean() > 0.85 else "Fair" if df_ks.mean() > 0.75 else "Poor"
+    ba_quality = (
+        "Excellent"
+        if df_ba.mean() > 0.99
+        else "Good"
+        if df_ba.mean() > 0.95
+        else "Fair"
+        if df_ba.mean() > 0.90
+        else "Poor"
+    )
+    ks_quality = (
+        "Excellent"
+        if df_ks.mean() > 0.90
+        else "Good"
+        if df_ks.mean() > 0.85
+        else "Fair"
+        if df_ks.mean() > 0.75
+        else "Poor"
+    )
 
-    logger.info(f"Overall Assessment - Boundary: {ba_quality}, Distribution: {ks_quality}")
+    logger.info(
+        f"Overall Assessment - Boundary: {ba_quality}, Distribution: {ks_quality}"
+    )
     logger.info(f"Results saved to: {save_path_data}")
     logger.info("=" * 80)
 
@@ -637,24 +562,24 @@ def evaluate_reconstruction(
 def classify_trajectories(
     classifier,
     trajectory_data: Dict[str, pd.DataFrame],
-    gene_subset: Optional[List[str]] = None
+    gene_subset: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
     Apply stage classifier to synthetic trajectories.
-    
+
     Args:
         classifier: Trained classifier model
         trajectory_data: Dictionary of patient pair to trajectory DataFrames
         gene_subset: Optional subset of genes to use for classification
-        
+
     Returns:
         DataFrame with classification results for each trajectory point
     """
     logger.info("Classifying trajectory points")
-    
+
     # TODO: Implement trajectory classification
     # Migrate from notebooks/kirc_classification_trajectory.ipynb
-    
+
     raise NotImplementedError(
         "classify_trajectories() needs implementation from "
         "notebooks/kirc_classification_trajectory.ipynb"
@@ -662,64 +587,61 @@ def classify_trajectories(
 
 
 def interpolate_latent_linear(
-    z_source: np.ndarray,
-    z_target: np.ndarray,
-    n_steps: int = 50
+    z_source: np.ndarray, z_target: np.ndarray, n_steps: int = 50
 ) -> np.ndarray:
     """
     Linear interpolation in latent space.
-    
+
     Args:
         z_source: Source latent vector
         z_target: Target latent vector
         n_steps: Number of interpolation steps
-        
+
     Returns:
         Array of interpolated latent vectors (n_steps x latent_dim)
     """
     alphas = np.linspace(0, 1, n_steps)
-    interpolated = np.array([
-        (1 - alpha) * z_source + alpha * z_target
-        for alpha in alphas
-    ])
+    interpolated = np.array(
+        [(1 - alpha) * z_source + alpha * z_target for alpha in alphas]
+    )
     return interpolated
 
 
 def interpolate_latent_spherical(
-    z_source: np.ndarray,
-    z_target: np.ndarray,
-    n_steps: int = 50
+    z_source: np.ndarray, z_target: np.ndarray, n_steps: int = 50
 ) -> np.ndarray:
     """
     Spherical (SLERP) interpolation in latent space.
-    
+
     Args:
         z_source: Source latent vector
         z_target: Target latent vector
         n_steps: Number of interpolation steps
-        
+
     Returns:
         Array of interpolated latent vectors (n_steps x latent_dim)
     """
     # Normalize vectors
     z_source_norm = z_source / np.linalg.norm(z_source)
     z_target_norm = z_target / np.linalg.norm(z_target)
-    
+
     # Calculate angle between vectors
     omega = np.arccos(np.clip(np.dot(z_source_norm, z_target_norm), -1.0, 1.0))
-    
+
     if omega < 1e-8:
         # Vectors are nearly identical, use linear interpolation
         return interpolate_latent_linear(z_source, z_target, n_steps)
-    
+
     # SLERP formula
     alphas = np.linspace(0, 1, n_steps)
-    interpolated = np.array([
-        (np.sin((1 - alpha) * omega) / np.sin(omega)) * z_source +
-        (np.sin(alpha * omega) / np.sin(omega)) * z_target
-        for alpha in alphas
-    ])
-    
+    interpolated = np.array(
+        [
+            (np.sin((1 - alpha) * omega) / np.sin(omega)) * z_source
+            + (np.sin(alpha * omega) / np.sin(omega)) * z_target
+            for alpha in alphas
+        ]
+    )
+
     return interpolated
 
 
@@ -727,46 +649,48 @@ def dynamic_enrichment_analysis(
     trajectory_dir: Path,
     pathways_file: Path,
     output_dir: Path,
-    cancer_type: str = "kirc"
+    cancer_type: str = "kirc",
 ) -> pd.DataFrame:
     """
     Perform dynamic enrichment analysis on synthetic trajectories.
-    
+
     This orchestrates:
     1. DESeq2 analysis on each trajectory point
     2. GSEA on differential expression results
     3. Aggregation of enrichment across trajectories
-    
+
     Args:
         trajectory_dir: Directory containing trajectory CSV files
         pathways_file: Path to pathway GMT file
         output_dir: Directory to save results
         cancer_type: Cancer type identifier
-        
+
     Returns:
         DataFrame with aggregated enrichment results
     """
     logger.info(f"Running dynamic enrichment analysis for {cancer_type}")
-    
+
     # TODO: Implement orchestration
-    # Migrate from src_deseq_and_gsea_NCSR/full_bash.sh and related scripts
-    
+    # Migrate from src_deseq_and_gsea_NCSR/pipeline.sh and related scripts
+
     raise NotImplementedError(
         "dynamic_enrichment_analysis() needs implementation. "
-        "Migrate orchestration from src_deseq_and_gsea_NCSR/full_bash.sh, "
-        "py_deseq.py, and trajectory_analysis.py"
+        "Migrate orchestration from src_deseq_and_gsea_NCSR/pipeline.sh, "
+        "py_deseq.py, and trajectory_formatting.py"
     )
+
 
 # =============================================================================
 # Patient Connection and Trajectory Generation Functions
 # =============================================================================
 
+
 def calculate_all_possible_transitions(
     data: pd.DataFrame,
     metadata_selection: pd.DataFrame,
-    distance: str = 'wasserstein',
+    distance: str = "wasserstein",
     early_late: bool = False,
-    negative_trajectory: bool = False
+    negative_trajectory: bool = False,
 ) -> pd.DataFrame:
     """
     Calculate all possible patient-to-patient transitions for KIRC cancer.
@@ -813,28 +737,32 @@ def calculate_all_possible_transitions(
     - Only patients with identical gender and race are paired
     """
     # Select distance function
-    if distance == 'wasserstein':
+    if distance == "wasserstein":
         from scipy.stats import wasserstein_distance
+
         distance_fun = wasserstein_distance
-    elif distance == 'euclidean':
+    elif distance == "euclidean":
         from scipy.spatial.distance import euclidean
+
         distance_fun = euclidean
     else:
-        raise ValueError('Distance function not implemented. Use either "wasserstein" or "euclidean".')
+        raise ValueError(
+            'Distance function not implemented. Use either "wasserstein" or "euclidean".'
+        )
 
     # Define stage transitions based on parameters
     if early_late and not negative_trajectory:
-        possible_transitions = ['early_to_late']
-        stage_pairs = [['early', 'late']]
+        possible_transitions = ["early_to_late"]
+        stage_pairs = [["early", "late"]]
     elif early_late and negative_trajectory:
-        possible_transitions = ['early_to_early', 'late_to_late']
-        stage_pairs = [['early', 'early'], ['late', 'late']]
+        possible_transitions = ["early_to_early", "late_to_late"]
+        stage_pairs = [["early", "early"], ["late", "late"]]
     elif not early_late and not negative_trajectory:
-        possible_transitions = ['1_to_2', '2_to_3', '3_to_4']
-        stage_pairs = [['I', 'II'], ['II', 'III'], ['III', 'IV']]
+        possible_transitions = ["1_to_2", "2_to_3", "3_to_4"]
+        stage_pairs = [["I", "II"], ["II", "III"], ["III", "IV"]]
     elif not early_late and negative_trajectory:
-        possible_transitions = ['1_to_1', '2_to_2', '3_to_3', '4_to_4']
-        stage_pairs = [['I', 'I'], ['II', 'II'], ['III', 'III'], ['IV', 'IV']]
+        possible_transitions = ["1_to_1", "2_to_2", "3_to_3", "4_to_4"]
+        stage_pairs = [["I", "I"], ["II", "II"], ["III", "III"], ["IV", "IV"]]
 
     # Calculate all possible transitions
     results = []
@@ -842,13 +770,17 @@ def calculate_all_possible_transitions(
         source_target_stage = stage_pairs[i_tr]
 
         # Iterate through all patient pairs at specified stages
-        for pat_i in metadata_selection.index[metadata_selection['stage'] == source_target_stage[0]]:
-            for pat_ii in metadata_selection.index[metadata_selection['stage'] == source_target_stage[1]]:
+        for pat_i in metadata_selection.index[
+            metadata_selection["stage"] == source_target_stage[0]
+        ]:
+            for pat_ii in metadata_selection.index[
+                metadata_selection["stage"] == source_target_stage[1]
+            ]:
                 # Extract metadata for both patients
-                source_gender = metadata_selection.at[pat_i, 'gender']
-                target_gender = metadata_selection.at[pat_ii, 'gender']
-                source_race = metadata_selection.at[pat_i, 'race']
-                target_race = metadata_selection.at[pat_ii, 'race']
+                source_gender = metadata_selection.at[pat_i, "gender"]
+                target_gender = metadata_selection.at[pat_ii, "gender"]
+                source_race = metadata_selection.at[pat_i, "race"]
+                target_race = metadata_selection.at[pat_ii, "race"]
 
                 # Skip if metadata doesn't match (gender and race must match)
                 if not (source_race == target_race and source_gender == target_gender):
@@ -856,24 +788,30 @@ def calculate_all_possible_transitions(
 
                 # Store transition information
                 results_i = {
-                    'source': pat_i,
-                    'target': pat_ii,
-                    'source_gender': source_gender,
-                    'target_gender': target_gender,
-                    'source_race': source_race,
-                    'target_race': target_race,
-                    'transition': transition,
-                    'distance': distance_fun(data[pat_i], data[pat_ii]),
+                    "source": pat_i,
+                    "target": pat_ii,
+                    "source_gender": source_gender,
+                    "target_gender": target_gender,
+                    "source_race": source_race,
+                    "target_race": target_race,
+                    "transition": transition,
+                    "distance": distance_fun(data[pat_i], data[pat_ii]),
                 }
                 results.append(results_i)
 
     # Convert to DataFrame and sort
     results_df = pd.DataFrame(results)
     results_df.sort_values(
-        ['source_gender', 'target_gender', 'source_race', 'target_race',
-         'transition', 'distance'],
+        [
+            "source_gender",
+            "target_gender",
+            "source_race",
+            "target_race",
+            "transition",
+            "distance",
+        ],
         inplace=True,
-        ignore_index=True
+        ignore_index=True,
     )
     return results_df
 
@@ -882,7 +820,7 @@ def link_patients_closest(
     transitions_df: pd.DataFrame,
     start_with_first_stage: bool = True,
     early_late: bool = False,
-    closest: bool = True
+    closest: bool = True,
 ) -> pd.DataFrame:
     """
     Link patients by selecting closest (or farthest) matches across stages.
@@ -936,11 +874,11 @@ def link_patients_closest(
 
     # Define transition order based on direction
     if start_with_first_stage and not early_late:
-        transitions_possible = ['1_to_2', '2_to_3', '3_to_4']
+        transitions_possible = ["1_to_2", "2_to_3", "3_to_4"]
     elif not start_with_first_stage and not early_late:
-        transitions_possible = ['3_to_4', '2_to_3', '1_to_2']
+        transitions_possible = ["3_to_4", "2_to_3", "1_to_2"]
     elif early_late:
-        transitions_possible = ['early_to_late']
+        transitions_possible = ["early_to_late"]
 
     # 0 for closest (smallest distance), -1 for farthest (largest distance)
     idx = 0 if closest else -1
@@ -948,32 +886,36 @@ def link_patients_closest(
     # Find closest/farthest patient for each source patient
     closest_list = []
     for transition_i in transitions_possible:
-        transition_df_i = transitions_df[transitions_df['transition'] == transition_i]
+        transition_df_i = transitions_df[transitions_df["transition"] == transition_i]
 
-        logger.info(f"Processing transition {transition_i}: {len(transition_df_i)} pairs")
+        logger.info(
+            f"Processing transition {transition_i}: {len(transition_df_i)} pairs"
+        )
 
         # Iterate through all metadata combinations
-        for gender_i in ['FEMALE', 'MALE']:
+        for gender_i in ["FEMALE", "MALE"]:
             df_gender_i = transition_df_i.query(f"source_gender == '{gender_i}'")
 
-            for race_i in ['ASIAN', 'BLACK OR AFRICAN AMERICAN', 'WHITE']:
+            for race_i in ["ASIAN", "BLACK OR AFRICAN AMERICAN", "WHITE"]:
                 df_race_i = df_gender_i.query(f"source_race == '{race_i}'")
 
                 if df_race_i.empty:
                     continue
 
                 # Get unique patients to link
-                unique_sources = df_race_i['source'].unique()
-                unique_targets = df_race_i['target'].unique()
-                use_uniques = unique_sources if start_with_first_stage else unique_targets
-                use_column = 'source' if start_with_first_stage else 'target'
+                unique_sources = df_race_i["source"].unique()
+                unique_targets = df_race_i["target"].unique()
+                use_uniques = (
+                    unique_sources if start_with_first_stage else unique_targets
+                )
+                use_column = "source" if start_with_first_stage else "target"
 
                 # Find closest/farthest match for each patient
                 for pat_i in use_uniques:
                     pat_matches = df_race_i[df_race_i[use_column] == pat_i]
                     if len(pat_matches) > 0:
                         # Sort by distance and select first (closest) or last (farthest)
-                        best_match = pat_matches.sort_values('distance').iloc[idx]
+                        best_match = pat_matches.sort_values("distance").iloc[idx]
                         closest_list.append(best_match)
 
     # Convert to DataFrame
@@ -989,7 +931,7 @@ def link_patients_random(
     results_df: pd.DataFrame,
     start_with_first_stage: bool = True,
     link_next: int = 5,
-    transitions_possible: Optional[List[str]] = None
+    transitions_possible: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
     Link patients to multiple random targets at the next stage.
@@ -1026,35 +968,43 @@ def link_patients_random(
     """
     # Set default transitions if not provided
     if transitions_possible is None:
-        transitions_possible = ['early_to_late']
+        transitions_possible = ["early_to_late"]
 
     # Get unique genders and races
-    unique_genders = results_df['source_gender'].unique().tolist()
+    unique_genders = results_df["source_gender"].unique().tolist()
     # Get unique races
-    unique_races = results_df['source_race'].unique().tolist()
-    if 'WHITE' in unique_races:
-        unique_races.remove('WHITE')
+    unique_races = results_df["source_race"].unique().tolist()
+    if "WHITE" in unique_races:
+        unique_races.remove("WHITE")
     # transition:
     samples = []
     for transition_i in transitions_possible:
-        transition_df_i = results_df[results_df['transition'] == transition_i]
+        transition_df_i = results_df[results_df["transition"] == transition_i]
         for gender_i in unique_genders:
             df_samples_i = transition_df_i.query(
-                f"source_gender == '{gender_i}' & source_race == 'WHITE'")  # we can only do this for the whites since these are the only ones with enough samples
+                f"source_gender == '{gender_i}' & source_race == 'WHITE'"
+            )  # we can only do this for the whites since these are the only ones with enough samples
             if df_samples_i.empty:
-                print(f"Warning: No WHITE patients found for gender {gender_i} in transition {transition_i}")
+                print(
+                    f"Warning: No WHITE patients found for gender {gender_i} in transition {transition_i}"
+                )
                 continue
-            unique_sources_i = np.unique(df_samples_i['source']).tolist()
-            unique_targets_i = np.unique(df_samples_i['target']).tolist()
-            use_uniques = unique_sources_i if start_with_first_stage else unique_targets_i
-            use_source_target = 'source' if start_with_first_stage else 'target'
+            unique_sources_i = np.unique(df_samples_i["source"]).tolist()
+            unique_targets_i = np.unique(df_samples_i["target"]).tolist()
+            use_uniques = (
+                unique_sources_i if start_with_first_stage else unique_targets_i
+            )
+            use_source_target = "source" if start_with_first_stage else "target"
             for pat_i in use_uniques:
                 sample_i = df_samples_i.loc[df_samples_i[use_source_target] == pat_i]
                 if len(sample_i) >= link_next:
                     sample_i = sample_i.sample(
-                        link_next)  # Sample a number of patients at next stage to link to each patient of current stage
+                        link_next
+                    )  # Sample a number of patients at next stage to link to each patient of current stage
                 else:
-                    sample_i = sample_i.sample(len(sample_i))  # Sample all available patients if less than link_next
+                    sample_i = sample_i.sample(
+                        len(sample_i)
+                    )  # Sample all available patients if less than link_next
                 samples.append(sample_i)
 
     # Check if samples list is empty
@@ -1067,17 +1017,14 @@ def link_patients_random(
     # Add the rest of the races
     if unique_races:
         samples_df = pd.concat(
-            [
-                samples_df,
-                results_df[results_df['source_race'].isin(unique_races)]
-            ]
+            [samples_df, results_df[results_df["source_race"].isin(unique_races)]]
         )
     samples_df.reset_index(drop=True, inplace=True)
     return samples_df
 
 
 def build_trajectory_network(
-    patient_links: pd.DataFrame
+    patient_links: pd.DataFrame,
 ) -> Tuple[Dict[str, List[str]], List[List[str]]]:
     """
     Build trajectory network and find all complete disease progression paths.
@@ -1128,8 +1075,8 @@ def build_trajectory_network(
     """
     logger.info("Building trajectory network from patient links")
 
-    sources = patient_links['source']
-    targets = patient_links['target']
+    sources = patient_links["source"]
+    targets = patient_links["target"]
 
     # Build network adjacency list
     network = {}
@@ -1145,7 +1092,9 @@ def build_trajectory_network(
     logger.info(f"Found {len(unique_sources)} root nodes (earliest stage patients)")
 
     # Recursively find all trajectories from each root
-    def find_trajectories(start_node: str, visited: Optional[List[str]] = None) -> List[List[str]]:
+    def find_trajectories(
+        start_node: str, visited: Optional[List[str]] = None
+    ) -> List[List[str]]:
         """Depth-first search to find all paths from start_node to leaf nodes."""
         if visited is None:
             visited = []
@@ -1181,13 +1130,17 @@ def build_trajectory_network(
         for source in unique_sources:
             all_trajectories.extend(find_trajectories(source))
 
-    logger.info(f"Discovered {len(all_trajectories)} complete disease progression trajectories")
+    logger.info(
+        f"Discovered {len(all_trajectories)} complete disease progression trajectories"
+    )
 
     # Log trajectory length statistics only if we have trajectories
     if len(all_trajectories) > 0:
         traj_lengths = [len(t) for t in all_trajectories]
-        logger.info(f"Trajectory lengths - Min: {min(traj_lengths)}, Max: {max(traj_lengths)}, "
-                    f"Mean: {np.mean(traj_lengths):.1f}")
+        logger.info(
+            f"Trajectory lengths - Min: {min(traj_lengths)}, Max: {max(traj_lengths)}, "
+            f"Mean: {np.mean(traj_lengths):.1f}"
+        )
     else:
         logger.warning("No trajectories found!")
 
@@ -1200,10 +1153,10 @@ def generate_trajectory_data(
     trajectory: List[str],
     gene_data: pd.DataFrame,
     n_timepoints: int = 50,
-    interpolation_method: str = 'linear',
-    device: str = 'cpu',
+    interpolation_method: str = "linear",
+    device: str = "cpu",
     save_path: Optional[Path] = None,
-    scaler: Optional[MinMaxScaler] = None
+    scaler: Optional[MinMaxScaler] = None,
 ) -> pd.DataFrame:
     """
     Generate synthetic gene expression data along a patient trajectory.
@@ -1254,7 +1207,9 @@ def generate_trajectory_data(
     """
 
     logger.info(f"Generating trajectory data for {len(trajectory)} patients")
-    logger.info(f"Interpolation: {n_timepoints} points × {len(trajectory)-1} segments")
+    logger.info(
+        f"Interpolation: {n_timepoints} points × {len(trajectory) - 1} segments"
+    )
     logger.info(f"Method: {interpolation_method}")
 
     # Set models to evaluation mode
@@ -1278,9 +1233,9 @@ def generate_trajectory_data(
         logger.info("Using provided scaler from VAE training")
 
     # Select interpolation function
-    if interpolation_method == 'linear':
+    if interpolation_method == "linear":
         interp_func = interpolate_latent_linear
-    elif interpolation_method == 'spherical':
+    elif interpolation_method == "spherical":
         interp_func = interpolate_latent_spherical
     else:
         raise ValueError(f"Unknown interpolation method: {interpolation_method}")
@@ -1293,7 +1248,9 @@ def generate_trajectory_data(
             source_patient = trajectory[i]
             target_patient = trajectory[i + 1]
 
-            logger.info(f"Segment {i+1}/{len(trajectory)-1}: {source_patient} → {target_patient}")
+            logger.info(
+                f"Segment {i + 1}/{len(trajectory) - 1}: {source_patient} → {target_patient}"
+            )
 
             # Get gene expression for source and target
             # gene_data is (genes × patients), so gene_data[patient] is a Series of gene values
@@ -1319,21 +1276,29 @@ def generate_trajectory_data(
             interpolated_z = interp_func(z_source_np, z_target_np, n_timepoints)
 
             # Decode interpolated latent vectors
-            interpolated_z_tensor = torch.tensor(interpolated_z, dtype=torch.float32).to(device)
+            interpolated_z_tensor = torch.tensor(
+                interpolated_z, dtype=torch.float32
+            ).to(device)
             decoded = vae_model.decoder(interpolated_z_tensor)
 
             # Denormalize using the same scaler
             # decoded is (n_timepoints, genes), scaler expects (n_samples, n_features)
             decoded_np = decoded.cpu().numpy()  # (n_timepoints, genes)
-            segment_data = scaler.inverse_transform(decoded_np)  # (n_timepoints, genes) - REAL SPACE
+            segment_data = scaler.inverse_transform(
+                decoded_np
+            )  # (n_timepoints, genes) - REAL SPACE
 
             # Apply reconstruction network if provided
             # CRITICAL: RecNet works on REAL SPACE data, not normalized!
             if recnet_model is not None:
                 # Convert to tensor and apply RecNet directly to real space data
-                segment_tensor = torch.tensor(segment_data, dtype=torch.float32).to(device)
+                segment_tensor = torch.tensor(segment_data, dtype=torch.float32).to(
+                    device
+                )
                 refined = recnet_model(segment_tensor)
-                segment_data = refined.cpu().numpy()  # (n_timepoints, genes) - REAL SPACE
+                segment_data = (
+                    refined.cpu().numpy()
+                )  # (n_timepoints, genes) - REAL SPACE
 
             all_segments.append(segment_data)
 
@@ -1341,16 +1306,13 @@ def generate_trajectory_data(
     trajectory_data = np.vstack(all_segments)
 
     # Create DataFrame
-    trajectory_df = pd.DataFrame(
-        trajectory_data,
-        columns=gene_data.index
-    )
+    trajectory_df = pd.DataFrame(trajectory_data, columns=gene_data.index)
 
     # Create informative index
     time_indices = []
     for i in range(len(trajectory) - 1):
         for t in range(n_timepoints):
-            time_indices.append(f"{trajectory[i]}_to_{trajectory[i+1]}_t{t:03d}")
+            time_indices.append(f"{trajectory[i]}_to_{trajectory[i + 1]}_t{t:03d}")
     trajectory_df.index = time_indices
 
     logger.info(f"Generated trajectory data: {trajectory_df.shape}")
@@ -1363,4 +1325,3 @@ def generate_trajectory_data(
         logger.info(f"Saved trajectory to: {save_path}")
 
     return trajectory_df
-

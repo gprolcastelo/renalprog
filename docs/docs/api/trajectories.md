@@ -12,14 +12,6 @@ The trajectories module provides analysis tools for:
 - Transition probability calculation
 - Trajectory visualization
 
-## Trajectory Generation
-
-### generate_trajectories
-
-Generate smooth disease progression trajectories.
-
-::: renalprog.modeling.predict.generate_trajectories
-
 ## Network Construction
 
 ### build_trajectory_network
@@ -55,12 +47,6 @@ Generate complete trajectory dataset with metadata.
 ::: renalprog.modeling.predict.generate_trajectory_data
 
 ## Patient Connectivity
-
-### create_patient_connections
-
-Create optimal patient pairings for trajectories.
-
-::: renalprog.modeling.predict.create_patient_connections
 
 ### link_patients_closest
 
@@ -202,82 +188,6 @@ plot_trajectory(
     output_path=Path("reports/figures/trajectory_example.png"),
     title="Disease Progression Trajectory"
 )
-```
-
-## Complete Workflow Example
-
-```python
-import torch
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from renalprog.modeling.train import VAE
-from renalprog.modeling.predict import (
-    apply_vae,
-    create_patient_connections,
-    generate_trajectories,
-    build_trajectory_network,
-    dynamic_enrichment_analysis
-)
-from renalprog.plots import plot_trajectory, plot_latent_space
-
-# 1. Load model and data
-model = VAE(input_dim=20000, mid_dim=1024, features=128)
-model.load_state_dict(torch.load("models/my_vae/best_model.pt"))
-
-expr = pd.read_csv("data/interim/split/test_expression.tsv", sep="\t", index_col=0)
-clinical = pd.read_csv("data/interim/split/test_clinical.tsv", sep="\t", index_col=0)
-
-# 2. Encode to latent space
-results = apply_vae(model, expr.values, device='cuda')
-latent = results['latent']
-
-# 3. Split by stage
-early_mask = clinical['stage'] == 'early'
-late_mask = clinical['stage'] == 'late'
-
-# 4. Create patient connections
-connections = create_patient_connections(
-    latent_early=latent[early_mask],
-    latent_late=latent[late_mask],
-    method='closest',
-    output_path=Path("data/processed/connections.csv")
-)
-
-# 5. Generate trajectories
-trajectories = generate_trajectories(
-    model=model,
-    start_data=expr.values[early_mask],
-    end_data=expr.values[late_mask],
-    n_steps=50,
-    interpolation='spherical',
-    device='cuda'
-)
-
-# 6. Build trajectory network
-network = build_trajectory_network(
-    connections=connections,
-    output_path=Path("data/processed/network.graphml")
-)
-
-# 7. Dynamic enrichment analysis
-enrichment = dynamic_enrichment_analysis(
-    trajectories=trajectories,
-    gene_names=expr.columns.tolist(),
-    pathway_file=Path("data/external/ReactomePathways.gmt"),
-    output_dir=Path("reports/enrichment")
-)
-
-# 8. Visualize
-plot_trajectory(
-    trajectory=trajectories[0],
-    feature_names=expr.columns[:20],  # Top 20 genes
-    output_path=Path("reports/figures/trajectory_001.png")
-)
-
-print(f"Generated {len(trajectories)} trajectories")
-print(f"Network edges: {network.number_of_edges()}")
-print(f"Enrichment timepoints: {len(enrichment)}")
 ```
 
 ## See Also

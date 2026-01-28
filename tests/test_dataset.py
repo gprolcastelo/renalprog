@@ -5,8 +5,6 @@ Test dataset module functionality.
 import pytest
 import pandas as pd
 import numpy as np
-from pathlib import Path
-import tempfile
 
 from renalprog.dataset import (
     load_rnaseq_data,
@@ -22,11 +20,7 @@ def sample_rnaseq_data():
     np.random.seed(2023)
     genes = [f"GENE_{i}" for i in range(100)]
     samples = [f"SAMPLE_{i}" for i in range(20)]
-    data = pd.DataFrame(
-        np.random.rand(100, 20),
-        index=genes,
-        columns=samples
-    )
+    data = pd.DataFrame(np.random.rand(100, 20), index=genes, columns=samples)
     return data
 
 
@@ -35,10 +29,7 @@ def sample_clinical_data():
     """Create sample clinical data for testing."""
     samples = [f"SAMPLE_{i}" for i in range(20)]
     stages = ["Stage I"] * 5 + ["Stage II"] * 5 + ["Stage III"] * 5 + ["Stage IV"] * 5
-    data = pd.DataFrame(
-        {"ajcc_pathologic_tumor_stage": stages},
-        index=samples
-    )
+    data = pd.DataFrame({"ajcc_pathologic_tumor_stage": stages}, index=samples)
     return data
 
 
@@ -53,7 +44,9 @@ def test_map_stages_to_early_late(sample_clinical_data):
     assert (mapped[10:] == "late").all()  # Stages III and IV
 
 
-@pytest.mark.skip(reason="Test has inconsistent behavior with small sample sizes and stratified splitting")
+@pytest.mark.skip(
+    reason="Test has inconsistent behavior with small sample sizes and stratified splitting"
+)
 def test_create_train_test_split(sample_rnaseq_data, sample_clinical_data, tmp_path):
     """Test train/test split creation."""
     # Save temporary files
@@ -64,12 +57,10 @@ def test_create_train_test_split(sample_rnaseq_data, sample_clinical_data, tmp_p
     sample_clinical_data.to_csv(clinical_path)
 
     # Create split
-    X_train, X_test, y_train, y_test, full_data, full_clinical = create_train_test_split(
-        rnaseq_path,
-        clinical_path,
-        test_size=0.2,
-        seed=2023,
-        use_onehot=True
+    X_train, X_test, y_train, y_test, full_data, full_clinical = (
+        create_train_test_split(
+            rnaseq_path, clinical_path, test_size=0.2, seed=2023, use_onehot=True
+        )
     )
 
     # Check shapes
@@ -95,7 +86,9 @@ def test_create_train_test_split(sample_rnaseq_data, sample_clinical_data, tmp_p
     assert set(X_train.index).isdisjoint(set(X_test.index))
 
 
-def test_train_test_split_with_output(sample_rnaseq_data, sample_clinical_data, tmp_path):
+def test_train_test_split_with_output(
+    sample_rnaseq_data, sample_clinical_data, tmp_path
+):
     """Test that split saves files correctly."""
     rnaseq_path = tmp_path / "rnaseq.csv"
     clinical_path = tmp_path / "clinical.csv"
@@ -105,11 +98,7 @@ def test_train_test_split_with_output(sample_rnaseq_data, sample_clinical_data, 
     sample_clinical_data.to_csv(clinical_path)
 
     create_train_test_split(
-        rnaseq_path,
-        clinical_path,
-        test_size=0.2,
-        seed=2023,
-        output_dir=output_dir
+        rnaseq_path, clinical_path, test_size=0.2, seed=2023, output_dir=output_dir
     )
 
     # Check that files were created
@@ -141,4 +130,3 @@ def test_load_clinical_data(sample_clinical_data, tmp_path):
 
     assert len(loaded) == len(sample_clinical_data)
     assert loaded.name == "ajcc_pathologic_tumor_stage"
-

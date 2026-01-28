@@ -8,8 +8,10 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from typing import Tuple, Optional
-import logging, requests, gzip
-from renalprog.config import PreprocessingConfig, RAW_DATA_DIR
+import logging
+import requests
+import gzip
+from renalprog.config import PreprocessingConfig
 from renalprog.utils import set_seed
 
 logger = logging.getLogger(__name__)
@@ -90,25 +92,182 @@ def download_data(
 
     return rnaseq_path, clinical_path, phenotype_path
 
+
+def download_preprocessed_from_zenodo(
+        rnaseq_url: str,
+        clinical_url: str,
+        output_dir: Path,
+        rnaseq_filename: str = "preprocessed_rnaseq.csv",
+        clinical_filename: str = "clinical_data.csv",
+        timeout: int = 300) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Download preprocessed RNAseq and clinical data from Zenodo.
+
+    This function downloads already preprocessed datasets from Zenodo repositories,
+    which bypasses the need for raw data processing. The downloaded data includes
+    normalized RNAseq expression matrices and curated clinical metadata.
+
+    Args:
+        rnaseq_url: Direct download URL for the preprocessed RNAseq CSV file from Zenodo.
+            Example: 'https://zenodo.org/records/17987300/files/Static_KIRC.csv?download=1'
+        clinical_url: Direct download URL for the clinical metadata CSV file from Zenodo.
+            Example: 'https://zenodo.org/records/17987300/files/nodes_metadata.csv?download=1'
+        output_dir: Directory where downloaded files will be saved.
+        rnaseq_filename: Filename to save the RNAseq data as (default: "preprocessed_rnaseq.csv").
+        clinical_filename: Filename to save the clinical data as (default: "clinical_data.csv").
+        timeout: Request timeout in seconds (default: 300).
+
+    Returns:
+        Tuple of (rnaseq_data, clinical_data) as pandas DataFrames:
+            - rnaseq_data: Gene expression matrix (genes × samples)
+            - clinical_data: Clinical metadata (samples × features)
+
+    Raises:
+        requests.RequestException: If download fails
+        IOError: If file I/O operations fail
+        ValueError: If downloaded data cannot be parsed
+
+    Notes:
+        - Downloaded files are automatically saved to the specified output directory
+        - Progress is logged during download
+        - Data is validated after download to ensure proper format
+
+    Examples:
+        >>> # Download preprocessed KIRC data
+        >>> rnaseq, clinical = download_preprocessed_from_zenodo(
+        ...     rnaseq_url='https://zenodo.org/records/17987300/files/Static_KIRC.csv?download=1',
+        ...     clinical_url='https://zenodo.org/records/17987300/files/nodes_metadata.csv?download=1',
+        ...     output_dir=Path('data/interim/preprocessed_KIRC_data')
+        ... )
+    """
+    # Ensure output directory exists
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("="*80)
+    logger.info("Downloading preprocessed data from Zenodo")
+    logger.info("="*80)
+
+    # =========================================================================
+    # Download RNAseq data
+    # =========================================================================
+    rnaseq_path = output_dir / rnaseq_filename
+    logger.info("\n[DOWNLOADING RNASEQ DATA]")
+    logger.info(f"  Source URL: {rnaseq_url}")
+    logger.info(f"  Destination: {rnaseq_path}")
+
+    try:
+        response = requests.get(rnaseq_url, timeout=timeout, stream=True)
+        response.raise_for_status()
+
+        total_size = int(response.headers.get('content-length', 0))
+        with open(rnaseq_path, 'wb') as file:
+            downloaded = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    file.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        percent = (downloaded / total_size) * 100
+                        print(f"\rDownloading RNAseq: {percent:.1f}%", end='', flush=True)
+
+        print()  # New line after progress
+        logger.info("  ✓ Successfully downloaded RNAseq data")
+
+        # Load and validate the data
+        rnaseq_data = pd.read_csv(rnaseq_path, index_col=0)
+        logger.info(f"  Shape: {rnaseq_data.shape[0]:,} genes × {rnaseq_data.shape[1]:,} samples")
+
+    except requests.RequestException as e:
+        logger.error(f"Failed to download RNAseq data: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Failed to load RNAseq data: {e}")
+        raise
+
+    # =========================================================================
+    # Download clinical data
+    # =========================================================================
+    clinical_path = output_dir / clinical_filename
+    logger.info("\n[DOWNLOADING CLINICAL DATA]")
+    logger.info(f"  Source URL: {clinical_url}")
+    logger.info(f"  Destination: {clinical_path}")
+
+    try:
+        response = requests.get(clinical_url, timeout=timeout, stream=True)
+        response.raise_for_status()
+
+        total_size = int(response.headers.get('content-length', 0))
+        with open(clinical_path, 'wb') as file:
+            downloaded = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    file.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        percent = (downloaded / total_size) * 100
+                        print(f"\rDownloading clinical: {percent:.1f}%", end='', flush=True)
+
+        print()  # New line after progress
+        logger.info("  ✓ Successfully downloaded clinical data")
+
+        # Load and validate the data
+        clinical_data = pd.read_csv(clinical_path, index_col=0)
+        logger.info(f"  Shape: {clinical_data.shape[0]:,} samples × {clinical_data.shape[1]:,} features")
+
+    except requests.RequestException as e:
+        logger.error(f"Failed to download clinical data: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Failed to load clinical data: {e}")
+        raise
+
+    # =========================================================================
+    # Validate data consistency
+    # =========================================================================
+    logger.info("\n[DATA VALIDATION]")
+
+    # Check for sample overlap
+    rnaseq_samples = set(rnaseq_data.columns)
+    clinical_samples = set(clinical_data.index)
+    common_samples = rnaseq_samples & clinical_samples
+
+    logger.info(f"  RNAseq samples: {len(rnaseq_samples):,}")
+    logger.info(f"  Clinical samples: {len(clinical_samples):,}")
+    logger.info(f"  Common samples: {len(common_samples):,}")
+
+    if len(common_samples) == 0:
+        logger.warning("  ⚠ WARNING: No common samples found between RNAseq and clinical data!")
+    elif len(common_samples) < len(rnaseq_samples):
+        logger.warning(f"  ⚠ WARNING: Only {len(common_samples)}/{len(rnaseq_samples)} RNAseq samples have clinical data")
+
+    logger.info("\n" + "="*80)
+    logger.info("Preprocessed data download completed successfully")
+    logger.info("="*80 + "\n")
+
+    return rnaseq_data, clinical_data
+
+
 def process_downloaded_data(
         rnaseq_path: Path = "data/raw/EB%2B%2BAdjustPANCAN_IlluminaHiSeq_RNASeqV2.geneExp.xena",
         clinical_path: Path = "data/raw/Survival_SupplementalTable_S1_20171025_xena_sp",
         phenotype_path: Path = "data/raw/TCGA_phenotype_denseDataOnlyDownload.tsv",
         cancer_type: str = "KIRC",
         output_dir: Path = "data/raw",
+        extract_controls: bool = True,
         early_late: bool = False) -> Tuple[pd.DataFrame,pd.DataFrame,pd.DataFrame]:
     """
     Process TCGA Pan-Cancer Atlas data for a specific cancer type.
 
     This function performs comprehensive data processing and quality control on TCGA
     datasets, including cancer type filtering, sample type selection, stage harmonization,
-    and optional binary classification mapping. The processing pipeline follows TCGA
-    best practices for multi-omics data integration.
+    and optional binary classification mapping.
 
     Processing Steps:
         1. Load raw RNA-seq, clinical, and phenotype data from TCGA Xena Hub
         2. Filter samples by cancer type (KIRC or BRCA)
         3. Select primary tumor samples only (exclude metastatic/recurrent)
+           and controls (solid tissue normal samples)
         4. Remove ambiguous stage annotations (Stage X, discrepancies, missing)
         5. Harmonize substages (e.g., Stage IA/IB/IC → Stage I)
         6. Optionally map stages to binary early/late classification
@@ -129,6 +288,9 @@ def process_downloaded_data(
             - "KIRC": Kidney Renal Clear Cell Carcinoma
             - "BRCA": Breast Invasive Carcinoma (filters to female patients only)
         output_dir: Directory where processed CSV files will be saved.
+        extract_controls: If True, extract and save control samples, named as
+            Solid Tissue Normal, into a separate "controls" subdirectory within
+            output_dir.
         early_late: If True, map AJCC stages to binary classification:
             - "early": Stage I and Stage II
             - "late": Stage III and Stage IV
@@ -139,6 +301,7 @@ def process_downloaded_data(
             - rnaseq_path: Processed RNA-seq expression matrix
             - clinical_path: Processed clinical annotations
             - phenotype_path: Processed phenotype data
+            - control_path: Processed control sample data (if applicable)
 
     Raises:
         FileNotFoundError: If input files do not exist
@@ -168,11 +331,6 @@ def process_downloaded_data(
         ...     output_dir="data/processed",
         ...     early_late=True
         ... )
-
-    References:
-        - TCGA Research Network: https://www.cancer.gov/tcga
-        - UCSC Xena Browser: https://xenabrowser.net/
-        - AJCC Cancer Staging Manual, 8th Edition
     """
     # =========================================================================
     # STEP 1: Load raw data from TCGA sources
@@ -218,7 +376,7 @@ def process_downloaded_data(
     pheno = pheno[pheno.index.isin(rnaseq.columns)]
     clinical = clinical[clinical.index.isin(rnaseq.columns)]
 
-    logger.info(f"\n  Post-filter shapes:")
+    logger.info("\n  Post-filter shapes:")
     logger.info(f"    RNA-seq:   {rnaseq.shape[0]:>6,} genes × {rnaseq.shape[1]:>5,} samples")
     logger.info(f"    Clinical:  {clinical.shape[0]:>6,} patients")
     logger.info(f"    Phenotype: {pheno.shape[0]:>6,} samples")
@@ -233,6 +391,23 @@ def process_downloaded_data(
     logger.info("  Sample type distribution:")
     for sample_type, count in sample_type_counts.items():
         logger.info(f"    {sample_type:<30} {count:>5,} samples")
+
+    # Extract controls samples if specified
+    if extract_controls:
+        logger.info("\n[EXTRACT CONTROLS]")
+        pheno_controls = pheno[pheno["sample_type"] == "Solid Tissue Normal"]
+        clinical_controls = clinical[clinical.index.isin(pheno.index)]
+        rnaseq_controls = rnaseq.loc[:, rnaseq.columns.isin(pheno_controls.index)]
+        logger.info(f"  Found {pheno_controls.shape[0]:>6,} control samples")
+        # Save control data
+        control_output_dir = Path(output_dir) / "controls"
+        control_output_dir.mkdir(parents=True, exist_ok=True)
+
+        rnaseq_controls.to_csv(control_output_dir / f"{cancer_type}_control_rnaseq.csv")
+        clinical_controls.to_csv(control_output_dir / f"{cancer_type}_control_clinical.csv")
+        pheno_controls.to_csv(control_output_dir / f"{cancer_type}_control_phenotype.csv")
+
+        logger.info(f"  Saved control data to {control_output_dir}")
 
     pheno = pheno[pheno["sample_type"] == "Primary Tumor"]
     clinical = clinical[clinical.index.isin(pheno.index)]
@@ -346,12 +521,13 @@ def process_downloaded_data(
     final_samples = rnaseq_redux.shape[1]
     retention_rate = (final_samples / initial_samples) * 100 if initial_samples > 0 else 0
 
-    logger.info(f"\n[FILTERING SUMMARY]")
+    logger.info("\n[FILTERING SUMMARY]")
     logger.info(f"  Initial samples:  {initial_samples:>5,}")
     logger.info(f"  Final samples:    {final_samples:>5,}")
     logger.info(f"  Retention rate:   {retention_rate:>5.1f}%")
     logger.info(f"  Samples removed:  {initial_samples - final_samples:>5,}")
-
+    if extract_controls:
+        logger.info(f"  Control samples found:  {rnaseq_controls.shape[1]:>5,}")
     # Save processed data to disk
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -360,7 +536,7 @@ def process_downloaded_data(
     path_clinical = output_dir / f"{cancer_type}_clinical.csv"
     path_phenotype = output_dir / f"{cancer_type}_phenotype.csv"
 
-    logger.info(f"\n[SAVING PROCESSED DATA]")
+    logger.info("\n[SAVING PROCESSED DATA]")
     logger.info(f"  Output directory: {output_dir}")
 
     rnaseq_redux.to_csv(path_rnaseq)
@@ -449,8 +625,13 @@ def load_clinical_data(path: Path, stage_column: str = "ajcc_pathologic_tumor_st
     logger.info(f"Loaded clinical data with {len(stages)} samples")
 
     if early_late:
-        stages = map_stages_to_early_late(stages)
-        logger.info("Mapped stages to binary early/late classification")
+        # Check if the stages are already in early/late format
+        unique_stages = stages.dropna().unique()
+        if set(unique_stages).issubset({"early", "late"}):
+            logger.info("Stages are already in early/late format; no mapping needed")
+        else:
+            stages = map_stages_to_early_late(stages)
+            logger.info("Mapped stages to binary early/late classification")
     logger.info(f"Stage distribution:\n{stages.value_counts()}")
     
     return stages
@@ -481,6 +662,7 @@ def map_stages_to_early_late(stages: pd.Series) -> pd.Series:
 def create_train_test_split(
     rnaseq_path: Path,
     clinical_path: Path,
+    stage_column: str = "ajcc_pathologic_tumor_stage",
     test_size: float = 0.2,
     seed: int = 2023,
     use_onehot: bool = True,
@@ -492,6 +674,7 @@ def create_train_test_split(
     Args:
         rnaseq_path: Path to RNA-seq CSV file
         clinical_path: Path to clinical CSV file
+        stage_column: Name of column containing stage information (default: "ajcc_pathologic_tumor_stage")
         test_size: Fraction of data to use for testing (default: 0.2)
         seed: Random seed for reproducibility (default: 2023)
         use_onehot: Whether to one-hot encode the labels (default: True)
@@ -504,7 +687,7 @@ def create_train_test_split(
     
     # Load data
     rnaseq = load_rnaseq_data(rnaseq_path)
-    clinical = load_clinical_data(clinical_path)
+    clinical = load_clinical_data(clinical_path,stage_column)
     
     # Ensure samples match between RNA-seq and clinical data
     common_samples = rnaseq.columns.intersection(clinical.index)

@@ -1,348 +1,304 @@
 # Using Pretrained Models
 
-This guide shows you how to use the pretrained VAE models provided with the RenalProg package to reproduce the results from the paper.
+This guide shows you how to use the pretrained VAE models from Hugging Face to reproduce the results from the paper without training models from scratch.
+The pretrained models were trained on the preprocessed TCGA data available in this repository (see [Preprocessing Tutorial](step1-data-processing.md) for details).
 
 ## Overview
 
-The repository includes pretrained models for two cancer types:
+Pre-trained models are available on Hugging Face Hub and include:
 
-- **KIRC** (Kidney Renal Clear Cell Carcinoma)
-- **BRCA** (Breast Invasive Carcinoma)
+- **VAE models**: Variational Autoencoders trained on TCGA data
+- **Reconstruction Networks**: Post-processing networks that refine VAE outputs
+- **Configuration files**: Model architectures and hyperparameters
 
-Each pretrained model comes with:
-
-- Trained VAE weights
-- Reconstruction network weights
-- Network architecture specifications
-
-## Pretrained Model Structure
-
-```
-models/pretrained/
-├── KIRC/
-│   ├── 20250321_VAE_idim8516_md512_feat256mse_relu.pth  # VAE weights
-│   ├── network_reconstruction.pth                       # Reconstruction network weights
-│   └── network_dims.csv                                 # Architecture specifications
-└── BRCA/
-    ├── 20251209_VAE_idim8954_md1024_feat512mse_relu.pth
-    ├── network_reconstruction.pth
-    └── network_dims.csv
-```
-
-## Preprocessed Data
-
-The preprocessed data for each cancer type is available in:
-
-```
-data/interim/
-├── preprocessed_KIRC/
-│   ├── clinical.csv    # Patient metadata (stages, demographics)
-│   └── rnaseq.csv      # Preprocessed RNA-seq expression data
-└── preprocessed_BRCA/
-    ├── clinical.csv
-    └── rnaseq.csv
-```
-
-### Data Format
-
-**clinical.csv**: Patient metadata with columns:
-- Index: Patient IDs (e.g., `TCGA-A3-3319-01`)
-- `ajcc_pathologic_tumor_stage`: Cancer stage (Stage I, II, III, IV)
-- Additional clinical features (varies by cancer type)
-
-**rnaseq.csv**: Gene expression data
-- Index: Gene symbols (e.g., `TSPAN6`, `TNMD`)
-- Columns: Patient IDs
-- Values: Log-transformed normalized gene expression
+!!! info "Available Cancer Types"
+    Pretrained models are available for:
+    
+    - **KIRC** (Kidney Renal Clear Cell Carcinoma)
+    - **BRCA** (Breast Invasive Carcinoma)
 
 ## Quick Start
 
-### 1. Generate Trajectories from Pretrained Models
+### Using the Pipeline Script
 
-Use the provided script to generate patient trajectories:
-
-```bash
-# For KIRC
-python scripts/pipeline_steps/use_pretrained_model.py \
-    --cancer_type KIRC \
-    --model_dir models/pretrained/KIRC \
-    --data_dir data/interim/preprocessed_KIRC \
-    --output_dir data/processed/trajectories_KIRC_pretrained
-
-# For BRCA
-python scripts/pipeline_steps/use_pretrained_model.py \
-    --cancer_type BRCA \
-    --model_dir models/pretrained/BRCA \
-    --data_dir data/interim/preprocessed_BRCA \
-    --output_dir data/processed/trajectories_BRCA_pretrained
-```
-
-### 2. Run Enrichment Analysis
-
-After generating trajectories, run pathway enrichment analysis:
+The easiest way to use pretrained models is with the `3_check_reconstruction.py` script:
 
 ```bash
-# For KIRC
-python scripts/pipeline_steps/6_enrichment_analysis.py \
-    --trajectory_dir data/processed/trajectories_KIRC_pretrained/early_to_late/test_to_test \
-    --output_dir data/processed/enrichment_KIRC_pretrained \
-    --n_threads 8 \
-    --gsea_path ./GSEA_4.3.2/gsea-cli.sh \
-    --pathways_file data/external/ReactomePathways.gmt
+# Download and use KIRC pretrained models
+python scripts/pipeline_steps/3_check_reconstruction.py \
+    --hf_models \
+    --cancer_type KIRC
 
-# For BRCA
-python scripts/pipeline_steps/6_enrichment_analysis.py \
-    --trajectory_dir data/processed/trajectories_BRCA_pretrained/early_to_late/test_to_test \
-    --output_dir data/processed/enrichment_BRCA_pretrained \
-    --n_threads 8 \
-    --gsea_path ./GSEA_4.3.2/gsea-cli.sh \
-    --pathways_file data/external/ReactomePathways.gmt
+# Or for BRCA
+python scripts/pipeline_steps/3_check_reconstruction.py \
+    --hf_models \
+    --cancer_type BRCA
 ```
 
-### 3. Generate Pathway Heatmaps
+This will:
+1. Download the VAE model and configuration from Hugging Face
+2. Download the Reconstruction Network model
+3. Load your preprocessed data
+4. Generate reconstructions
+5. Create UMAP visualizations comparing original vs reconstructed data
 
-Create visualizations of pathway enrichment:
+## Manual Usage in Python
+
+### Step 1: Install Hugging Face Hub
+
+Check the [official documentation](https://huggingface.co/docs/huggingface_hub/installation) to install the `huggingface-hub` library.
+The simplest way is via pip:
+
 
 ```bash
-# For KIRC
-python scripts/pipeline_steps/6b_generate_pathway_heatmap.py \
-    --enrichment_file data/processed/enrichment_KIRC_pretrained/trajectory_enrichment.csv \
-    --output_dir data/processed/enrichment_KIRC_pretrained \
-    --fdr_threshold 0.05
-
-# For BRCA
-python scripts/pipeline_steps/6b_generate_pathway_heatmap.py \
-    --enrichment_file data/processed/enrichment_BRCA_pretrained/trajectory_enrichment.csv \
-    --output_dir data/processed/enrichment_BRCA_pretrained \
-    --fdr_threshold 0.05
+pip install huggingface-hub
 ```
 
-## Advanced Usage
-
-### Loading Pretrained Models in Python
-
-You can load and use the pretrained models directly in your Python code:
+### Step 2: Download and Load Models
 
 ```python
+import huggingface_hub as hf
 import torch
-import pandas as pd
+import json
 from pathlib import Path
 from renalprog.modeling.train import VAE, NetworkReconstruction
-from renalprog.utils import get_device
+from renalprog.config import MODELS_DIR
 
-# Configuration
-cancer_type = "KIRC"
-model_dir = Path("models/pretrained/KIRC")
-data_dir = Path("data/interim/preprocessed_KIRC")
+# Set cancer type
+cancer_type = 'KIRC'  # or 'BRCA'
 
-# Load network architecture
-network_dims = pd.read_csv(model_dir / "network_dims.csv", index_col=0)
-input_dim = int(network_dims['in_dim'].values[0])
-layer1_dim = int(network_dims['layer1_dim'].values[0])
-layer2_dim = int(network_dims['layer2_dim'].values[0])
-layer3_dim = int(network_dims['layer3_dim'].values[0])
+# Create local directory for pretrained models
+model_dir = MODELS_DIR / "pretrained" / cancer_type
+model_dir.mkdir(parents=True, exist_ok=True)
 
-# Initialize VAE model
-# For KIRC: mid_dim=512, latent_dim=256
-# For BRCA: mid_dim=1024, latent_dim=512
-device = get_device(force_cpu=False)
+# ============================================================================
+# Download VAE Configuration
+# ============================================================================
+print(f"Downloading VAE config for {cancer_type}...")
+vae_config_path = hf.hf_hub_download(
+    repo_id="gprolcastelo/evenflow_models",
+    filename=f"{cancer_type}/config.json",
+    local_dir=model_dir.parent
+)
 
-if cancer_type == "KIRC":
-    vae_model = VAE(
-        input_dim=input_dim,
-        mid_dim=512,
-        latent_dim=256,
-        loss_fn='mse',
-        activation='relu'
-    ).to(device)
-else:  # BRCA
-    vae_model = VAE(
-        input_dim=input_dim,
-        mid_dim=1024,
-        latent_dim=512,
-        loss_fn='mse',
-        activation='relu'
-    ).to(device)
+# Load configuration
+with open(vae_config_path, 'r') as f:
+    vae_config = json.load(f)
 
-# Load VAE weights
-vae_weights = list(model_dir.glob("*VAE_*.pth"))[0]
-vae_model.load_state_dict(torch.load(vae_weights, map_location=device))
-vae_model.eval()
+print(f"VAE Configuration: {vae_config}")
 
-# Initialize reconstruction network
-reconstruction_network = NetworkReconstruction(
-    layer_dims=[input_dim, layer1_dim, layer2_dim, layer3_dim, input_dim]
+# ============================================================================
+# Download and Load VAE Model
+# ============================================================================
+# Model filenames for each cancer type
+vae_models = {
+    'KIRC': "KIRC/20250321_VAE_idim8516_md512_feat256mse_relu.pth",
+    'BRCA': "BRCA/20251209_VAE_idim8954_md1024_feat512mse_relu.pth"
+}
+
+print(f"Downloading VAE model for {cancer_type}...")
+vae_model_path = hf.hf_hub_download(
+    repo_id="gprolcastelo/evenflow_models",
+    filename=vae_models[cancer_type],
+    local_dir=model_dir.parent
+)
+
+# Initialize VAE
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model_vae = VAE(
+    input_dim=vae_config['INPUT_DIM'],
+    mid_dim=vae_config['MID_DIM'],
+    features=vae_config['LATENT_DIM']
 ).to(device)
 
-# Load reconstruction network weights
-reconstruction_network.load_state_dict(
-    torch.load(model_dir / "network_reconstruction.pth", map_location=device)
+# Load weights
+checkpoint = torch.load(vae_model_path, map_location=device, weights_only=False)
+model_vae.load_state_dict(checkpoint)
+model_vae.eval()
+
+print(f"✓ VAE model loaded successfully!")
+
+# ============================================================================
+# Download and Load Reconstruction Network
+# ============================================================================
+print(f"Downloading Reconstruction Network for {cancer_type}...")
+
+# Download network dimensions
+network_dims_path = hf.hf_hub_download(
+    repo_id="gprolcastelo/evenflow_models",
+    filename=f"{cancer_type}/network_dims.csv",
+    local_dir=model_dir.parent
 )
-reconstruction_network.eval()
 
-# Load data
-rnaseq = pd.read_csv(data_dir / "rnaseq.csv", index_col=0)
-clinical = pd.read_csv(data_dir / "clinical.csv", index_col=0)
+# Load dimensions
+import pandas as pd
+network_dims = pd.read_csv(network_dims_path).values.tolist()[0]
+print(f"Network dimensions: {network_dims}")
 
-# Generate latent representations
+# Download model
+recnet_model_path = hf.hf_hub_download(
+    repo_id="gprolcastelo/evenflow_models",
+    filename=f"{cancer_type}/network_reconstruction.pth",
+    local_dir=model_dir.parent
+)
+
+# Initialize Reconstruction Network
+model_recnet = NetworkReconstruction(layer_dims=network_dims).to(device)
+
+# Load weights
+checkpoint_recnet = torch.load(recnet_model_path, map_location=device, weights_only=False)
+model_recnet.load_state_dict(checkpoint_recnet)
+model_recnet.eval()
+
+print(f"✓ Reconstruction Network loaded successfully!")
+```
+
+### Step 3: Use Models for Inference
+
+```python
+from renalprog.utils import apply_VAE
+import pandas as pd
+
+# Load your preprocessed data
+data = pd.read_csv('data/interim/preprocessed_KIRC_data/preprocessed_rnaseq.csv', index_col=0)
+
+# If data is genes × samples, transpose it to samples × genes
+if data.shape[0] > data.shape[1]:
+    data = data.T
+
+print(f"Data shape: {data.shape}")
+
+# ============================================================================
+# Apply VAE
+# ============================================================================
+data_tensor = torch.tensor(data.values, dtype=torch.float32)
+
+reconstruction_vae, _, _, latent, scaler = apply_VAE(
+    data_tensor, 
+    model_vae, 
+    y=None
+)
+
+print(f"VAE reconstruction shape: {reconstruction_vae.shape}")
+print(f"Latent representation shape: {latent.shape}")
+
+# Convert to DataFrame
+df_reconstruction_vae = pd.DataFrame(
+    reconstruction_vae, 
+    index=data.index, 
+    columns=data.columns
+)
+
+df_latent = pd.DataFrame(
+    latent, 
+    index=data.index
+)
+
+# ============================================================================
+# Apply Reconstruction Network (Post-processing)
+# ============================================================================
+rec_tensor = torch.tensor(reconstruction_vae, dtype=torch.float32).to(device)
+
 with torch.no_grad():
-    data_tensor = torch.FloatTensor(rnaseq.T.values).to(device)
-    _, mu, logvar = vae_model(data_tensor)
-    latent_reps = mu.cpu().numpy()
+    reconstruction_final = model_recnet(rec_tensor)
 
-print(f"Generated latent representations: {latent_reps.shape}")
+# Convert to DataFrame
+df_reconstruction_final = pd.DataFrame(
+    reconstruction_final.cpu().numpy(),
+    index=data.index,
+    columns=data.columns
+)
+
+print(f"Final reconstruction shape: {df_reconstruction_final.shape}")
+
+# Save results
+df_reconstruction_final.to_csv('reconstructed_data.csv')
+df_latent.to_csv('latent_representation.csv')
+
+print("✓ Reconstruction complete!")
 ```
 
-### Generating Custom Trajectories
+## VAE Model Architecture Details
 
-You can customize trajectory generation parameters:
+| Model | Input Dim | Mid Dim | Latent Dim | File                                                    |
+|-------|-----------|---------|------------|---------------------------------------------------------|
+| KIRC  | 8,516 | 512 | 256 | `KIRC/20250321_VAE_idim8516_md512_feat256mse_relu.pth`  |
+| BRCA  | 8,954 | 1,024 | 512 | `BRCA/20251209_VAE_idim8954_md1024_feat512mse_relu.pth` |
 
-```python
-from renalprog.modeling.predict import (
-    calculate_all_possible_transitions,
-    link_patients_random,
-    build_trajectory_network,
-    generate_trajectory_data
-)
+## Hugging Face Repository
 
-# Calculate transitions
-all_traj = calculate_all_possible_transitions(
-    data=rnaseq,
-    metadata_selection=clinical[['stage']],
-    start_stage='early',
-    end_stage='late',
-    link_next=5,  # Number of nearest neighbors
-    distance_metric='wasserstein'
-)
+All pretrained models are hosted at:
 
-# Build trajectory network
-trajectory_network = build_trajectory_network(
-    all_traj=all_traj,
-    seed=2023
-)
+🤗 **[gprolcastelo/evenflow_models](https://huggingface.co/gprolcastelo/evenflow_models)**
 
-# Generate synthetic trajectories
-generate_trajectory_data(
-    data=rnaseq,
-    metadata=clinical,
-    trajectory_network=trajectory_network,
-    vae_model=vae_model,
-    reconstruction_network=reconstruction_network,
-    n_timepoints=50,
-    output_dir=output_dir / "trajectories",
-    interpolation_method='linear',
-    device=device
-)
+### Repository Structure
+
+```
+evenflow_models/
+├── KIRC/
+│   ├── config.json
+│   ├── network_dims.csv
+│   ├── network_reconstruction.pth
+│   └── 20250321_VAE_idim8516_md512_feat256mse_relu.pth
+└── BRCA/
+    ├── config.json
+    ├── network_dims.csv
+    ├── network_reconstruction.pth
+    └── 20251209_VAE_idim8954_md1024_feat512mse_relu.pth
 ```
 
-## Model Specifications
+## Complete Example: Reconstruction Validation
 
-### KIRC Pretrained Model
-
-- **VAE Architecture**:
-  - Input dimension: 8,516 genes
-  - Middle dimension: 512
-  - Latent dimension: 256
-  - Loss function: MSE
-  - Activation: ReLU
-
-- **Reconstruction Network**:
-  - Architecture: [8,954, 3,104, 790, 4,027, 8,954]
-  
-- **Training Details**:
-  - Beta-VAE with 3 cycles
-  - 600 total epochs
-  - Batch size: 8
-
-### BRCA Pretrained Model
-
-- **VAE Architecture**:
-  - Input dimension: 8,954 genes
-  - Middle dimension: 1,024
-  - Latent dimension: 512
-  - Loss function: MSE
-  - Activation: ReLU
-
-- **Reconstruction Network**:
-  - Architecture: [8,954, 3,104, 790, 4,027, 8,954]
-
-- **Training Details**:
-  - Beta-VAE with 3 cycles
-  - 600 total epochs
-  - Batch size: 8
-
-## Reproducing Paper Results
-
-To reproduce the exact results from the paper:
-
-1. **Use the pretrained models** (recommended for exact reproduction)
-2. **Follow the complete pipeline**:
+For a detailed example of using the pretrained models to validate reconstructions, refer to the [reconstruction tutorial](step3-reconstruction.md).
+As a summary, when using `3_check_reconstruction.py`, you have several options:
 
 ```bash
-# 1. Generate trajectories
-python scripts/pipeline_steps/use_pretrained_model.py \
-    --cancer_type KIRC \
-    --model_dir models/pretrained/KIRC \
-    --data_dir data/interim/preprocessed_KIRC \
-    --output_dir data/processed/paper_reproduction_KIRC
+# Basic usage with pretrained models
+python scripts/pipeline_steps/3_check_reconstruction.py --hf_models --cancer_type KIRC
 
-# 2. Run enrichment analysis
-python scripts/pipeline_steps/6_enrichment_analysis.py \
-    --trajectory_dir data/processed/paper_reproduction_KIRC/early_to_late/test_to_test \
-    --output_dir data/processed/enrichment_paper_KIRC \
-    --n_threads 8 \
-    --gsea_path ./GSEA_4.3.2/gsea-cli.sh \
-    --pathways_file data/external/ReactomePathways.gmt
+# Include SDMetrics evaluation (takes longer)
+python scripts/pipeline_steps/3_check_reconstruction.py --hf_models --cancer_type KIRC --sdmetrics
 
-# 3. Generate heatmaps
-python scripts/pipeline_steps/6b_generate_pathway_heatmap.py \
-    --enrichment_file data/processed/enrichment_paper_KIRC/trajectory_enrichment.csv \
-    --output_dir data/processed/enrichment_paper_KIRC \
-    --fdr_threshold 0.05
+# Use locally trained models instead
+python scripts/pipeline_steps/3_check_reconstruction.py --cancer_type KIRC
 ```
 
-## Troubleshooting
+### Arguments
 
-### GPU Memory Issues
+| Argument | Description                              | Default |
+|----------|------------------------------------------|---------|
+| `--cancer_type` | Cancer type (KIRC or BRCA)               | KIRC |
+| `--hf_models` | Load pretrained models from Hugging Face | False |
+| `--sdmetrics` | Evaluate using SDMetrics (very slow)     | False |
 
-If you encounter GPU memory issues, force CPU usage:
+## Output Files
 
-```python
-device = get_device(force_cpu=True)
+When running the reconstruction check, you'll get:
+
+```
+reports/figures/YYYYMMDD_CANCER_umap_reconstruction/
+├── preprocessed.html                          # UMAP of original data
+├── VAE_output.html                            # UMAP of VAE reconstruction
+├── recnet_output.html                         # UMAP of final reconstruction
+├── preprocessed_and_vae.html                  # Comparison: original vs VAE
+└── preprocessed_and_recnet.html               # Comparison: original vs final
+
+models/pretrained/CANCER/
+├── config.json                                # VAE configuration
+├── network_dims.csv                           # Reconstruction network architecture
+├── CANCER/
+│   ├── 20250321_VAE_*.pth                    # VAE weights
+│   └── network_reconstruction.pth             # Reconstruction network weights
 ```
 
-### Missing Dependencies
+## 📜 Citation
 
-Ensure all dependencies are installed:
+If you use these pretrained models in your research, please [cite](../citation.md)
 
-```bash
-pip install -r requirements.txt
-```
+## See Also
 
-### Data Compatibility
-
-Ensure your input data matches the expected format:
-- Gene expression data should be log-transformed
-- Clinical data should include `ajcc_pathologic_tumor_stage` column
-- Patient IDs should match between rnaseq.csv and clinical.csv
-
-## Next Steps
-
-- [Complete Pipeline Tutorial](complete-pipeline.md)
-- [Enrichment Analysis Guide](../ENRICHMENT_ANALYSIS.md)
-- [API Reference](../api/index.md)
-
-## Citation
-
-If you use these pretrained models, please cite:
-
-```bibtex
-@article{renalprog2024,
-  title={Deep Learning Analysis of Cancer Progression Trajectories},
-  author={Your Name et al.},
-  journal={In Preparation},
-  year={2024},
-  note={Preprint available soon}
-}
-```
+- [Reconstruction Tutorial](step3-reconstruction.md)
+- [VAE Training Tutorial](step2-vae-training.md)
+- [Complete Pipeline](complete-pipeline.md)
+- [API Documentation - Models](../api/models.md)
 

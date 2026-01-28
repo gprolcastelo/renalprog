@@ -13,23 +13,13 @@ The pipeline consists of six main steps:
 5. **Classification**: Stage prediction and biomarker discovery
 6. **Enrichment Analysis**: Pathway-level interpretation
 
-**Total Time**: ~8-12 hours (varies with hardware)
-
-**Requirements**: 
-- 16+ GB RAM
-- 50+ GB free disk space
-- GPU recommended for steps 2-4
-- R 4.0+ for step 6
+!!! note
+    We recommend using HPC for steps 2 and 6 due to computational demands.
+    Step 2 will benefit from GPU acceleration, while step 6 can be parallelized across multiple CPU cores.
 
 ## Prerequisites
 
-Ensure you have completed the installation:
-
-```bash
-mamba env create -f environment.yml
-mamba activate renalprog
-pip install -e .
-```
+Ensure you have completed the installation: see [Installation Guide](installation.md).
 
 ## Pipeline Execution
 
@@ -53,9 +43,6 @@ python 4_trajectories.py
 
 # Step 5: Classification (1 hour)
 python 5_classification.py
-
-# Step 6: Enrichment Analysis (2-6 hours with 8 cores)
-python 6_enrichment_analysis.py
 ```
 
 ### Option 2: Run with Makefile
@@ -69,21 +56,9 @@ make data
 make models
 make trajectories
 make classification
-make enrichment
 ```
 
-### Option 3: Use Job Scripts (HPC)
 
-If you're on an HPC cluster with SLURM:
-
-```bash
-# Submit all jobs
-sbatch jobs/job_data
-sbatch jobs/job_models
-sbatch jobs/job_trajectories
-sbatch jobs/job_classification
-sbatch jobs/job_enrichment
-```
 
 ## Detailed Step-by-Step Guide
 
@@ -117,9 +92,6 @@ print(f"Samples: {rnaseq.shape[0]}, Genes: {rnaseq.shape[1]}")
 assert rnaseq.isnull().sum().sum() == 0, "Missing values detected!"
 print("✓ Data quality check passed")
 ```
-
-**Time**: ~30 minutes  
-**See**: [Data Processing Tutorial](step1-data-processing.md)
 
 ---
 
@@ -176,9 +148,6 @@ with torch.no_grad():
     # Expected: MSE < 1.0 for well-trained model
 ```
 
-**Time**: 2-4 hours (GPU), 8-12 hours (CPU)  
-**See**: [VAE Training Tutorial](step2-vae-training.md)
-
 ---
 
 ### Step 3: Reconstruction Validation
@@ -214,9 +183,6 @@ for plot in required_plots:
     assert os.path.exists(os.path.join(plot_dir, plot)), f"Missing: {plot}"
 print("✓ All validation plots generated")
 ```
-
-**Time**: ~10 minutes  
-**See**: [Reconstruction Tutorial](step3-reconstruction.md)
 
 ---
 
@@ -272,9 +238,6 @@ assert traj.isnull().sum().sum() == 0, "Missing values in trajectory"
 print("✓ Trajectory validation passed")
 ```
 
-**Time**: ~30 minutes  
-**See**: [Trajectory Tutorial](step4-trajectories.md)
-
 ---
 
 ### Step 5: Classification
@@ -318,14 +281,13 @@ assert metrics['test_roc_auc'] > 0.90, "Low ROC AUC!"
 print("✓ Classification performance acceptable")
 ```
 
-**Time**: ~1 hour  
-**See**: [Classification Tutorial](step5-classification.md)
-
 ---
 
 ### Step 6: Enrichment Analysis
 
-**Script**: `scripts/pipeline_steps/6_enrichment_analysis.py`
+**For the full tutorial, see**: [Enrichment Tutorial](step6-enrichment.md)
+
+**Script**: `scripts/enrichment/pipeline.sh`
 
 **What it does**:
 - Calculates differential expression (DESeq-style) for each timepoint
@@ -334,29 +296,28 @@ print("✓ Classification performance acceptable")
 - Combines results into single dataset
 
 **Prerequisites**:
-- GSEA CLI tool installed ([installation guide](../GSEA_INSTALLATION.md))
+- GSEA CLI tool installed ([installation guide](../advanced/GSEA_INSTALLATION.md))
 - ReactomePathways.gmt in `data/external/`
 
-**Configuration**:
-```python
-n_threads = 8                       # Parallel processing threads
-gsea_path = './GSEA_4.3.2/gsea-cli.sh'
-pathways_file = 'data/external/ReactomePathways.gmt'
-```
 
 **Expected outputs**:
 ```
-data/processed/20251217_enrichment/
-├── deseq/
-│   └── early_to_late/
-│       ├── TCGA-XXX_to_YYY/
-│       │   ├── patient_tp0_foldchange.rnk
-│       │   ├── patient_tp1_foldchange.rnk
-│       │   └── gsea_tp0/
-│       │       ├── gsea_report_for_na_pos_*.tsv
-│       │       └── gsea_report_for_na_neg_*.tsv
-│       └── ...
-└── trajectory_enrichment.csv       # Final combined results
+output_dir/
+├── test_to_test/                                          # Synthetic trajectories
+│   ├── early_to_late/                                     # Transition type
+│   │   ├── patient1_to_patient2/                          # Patient trajectory
+│   │   │   ├── patient1_to_patient_0.rnk                  # Ranked gene list for timepoint 0
+│   │   │   ├── patient1_to_patient_1.rnk
+│   │   │   ├── ...
+│   │   │   ├── reports/                                   # GSEA output for all patients in directory
+│   │   │   │   ├── patient1_to_patient_0.GseaPreranked.*  # GSEA output files
+│   │   │   │   ├── gsea_report_for_na_pos_*.tsv           # Positive enrichment report
+│   │   │   │   └── gsea_report_for_na_neg_*.tsv           # Negative enrichment report
+│   │   ├──patient3_to_patient4/
+│   │   ├── ...
+│   └── gsea_commands_*.cmd                                # GSEA command files
+├── full_gsea_reports_kirc.csv                             # Final combined results
+└── heatmap_kirc_significantNES.csv                        # Significant pathways heatmap data
 ```
 
 **Final result format**:
@@ -367,146 +328,18 @@ TCGA-3Z-A93Z-01_to_TCGA-A3-A8OW-01,0,early_to_late,DNA Repair,0.52,1.87,0.012
 ...
 ```
 
-**Validation**:
-```python
-import pandas as pd
+The Idx column represents the timepoint along the trajectory.
 
-# Load enrichment results
-enrichment = pd.read_csv('data/processed/20251217_enrichment/trajectory_enrichment.csv')
+**Time**: approximate times for KIRC, after generating 50 timepoints of 279 trajectories:
+- DESeq analysis: 8 hours, running in 10 nodes with 112 CPUs each (no multithreading), and assigning 21 CPUs per task, with 2GB per CPU.
+- GSEA: 30 minutes, running in 5 nodes with 64 CPUs each (no multithreading), and assigning 1 CPUs per task, with 2GB per CPU.
 
-print(f"Total enrichment results: {len(enrichment)}")
-print(f"Unique patients: {enrichment['Patient'].nunique()}")
-print(f"Unique pathways: {enrichment['NAME'].nunique()}")
-
-# Check for significant pathways
-sig_pathways = enrichment[enrichment['FDR q-val'] < 0.05]
-print(f"Significant pathways (FDR < 0.05): {len(sig_pathways)}")
-
-assert len(enrichment) > 0, "No enrichment results!"
-assert enrichment['Patient'].nunique() == 500, "Missing trajectories!"
-print("✓ Enrichment analysis complete")
-```
-
-**Time**: 2-6 hours (depends on CPU cores)  
-**See**: [Enrichment Tutorial](step6-enrichment.md)
 
 ---
 
-## Checking Pipeline Outputs
-
-After running the complete pipeline, verify all outputs:
-
-```bash
-# Run validation script
-python scripts/validate_pipeline_outputs.py
-```
-
-Or manually check key files:
-
-```python
-import os
-import pandas as pd
-
-# Check each step's outputs
-checks = {
-    'Step 1': 'data/interim/preprocessed_KIRC_data/preprocessed_rnaseq.csv',
-    'Step 2': 'models/20251217_models_KIRC/vae/vae_model.pt',
-    'Step 3': 'reports/figures/reconstruction/latent_space_umap.png',
-    'Step 4': 'data/interim/20251217_synthetic_data/kirc/trajectory_metadata.csv',
-    'Step 5': 'models/20251217_classification_kirc/classifier.pkl',
-    'Step 6': 'data/processed/20251217_enrichment/trajectory_enrichment.csv',
-}
-
-for step, filepath in checks.items():
-    exists = os.path.exists(filepath)
-    status = "✓" if exists else "✗"
-    print(f"{status} {step}: {filepath}")
-```
-
-## Expected Disk Usage
-
-After completing the pipeline:
-
-```
-data/raw/                    ~5 GB    (TCGA downloads)
-data/interim/                ~15 GB   (trajectories + intermediate files)
-data/processed/              ~10 GB   (enrichment results)
-models/                      ~1 GB    (trained models)
-reports/                     ~100 MB  (figures)
--------------------------------------------
-Total:                       ~31 GB
-```
-
-## Performance Benchmarks
-
-Typical runtimes on different systems:
-
-| System | Step 2 | Step 6 | Total | Config |
-|--------|--------|--------|-------|--------|
-| HPC Cluster | 1 hr | 1 hr | 3 hrs | 48 cores, A100 GPU |
-| Desktop (2023) | 2 hrs | 2 hrs | 6 hrs | 16 cores, RTX 4080 |
-| Desktop (2020) | 3 hrs | 4 hrs | 9 hrs | 8 cores, GTX 1080 |
-| Laptop (2018) | 8 hrs | 6 hrs | 16 hrs | 4 cores, CPU only |
-
-## Troubleshooting
-
-### Pipeline Fails at Step X
-
-Resume from the failing step:
-
-```bash
-# Fix the issue, then run from that step onward
-python scripts/pipeline_steps/X_step_name.py
-```
-
-### Out of Disk Space
-
-Clean up intermediate files:
-
-```bash
-# Remove GSEA temporary files
-rm -rf data/processed/*/deseq/*/gsea_*
-
-# Remove old dated directories
-rm -rf data/interim/202412*  # Keep only latest
-```
-
-### Out of Memory
-
-Reduce batch sizes and threads:
-
-```python
-# In 2_models.py
-vae_config.BATCH_SIZE = 4  # Reduce from 8
-
-# In 6_enrichment_analysis.py
-n_threads = 2  # Reduce from 8
-```
-
-## Next Steps
-
-After completing the pipeline:
-
-1. **Analyze Results**: Explore the enrichment results
-2. **Create Visualizations**: Generate publication figures
-3. **Interpret Pathways**: Map significant pathways to biology
-4. **Validate Findings**: Test predictions experimentally
-
-See:
-- [Visualization Tutorial](visualization.md)
-- [Result Interpretation Guide](../reproducibility/results.md)
-- [API Reference](../api/index.md) for custom analyses
 
 ## Citation
 
-If you use this pipeline in your research, please cite:
-
-```bibtex
-@software{renalprog2024,
-  author = {Prol-Castelo, Guillermo},
-  title = {renalprog: Cancer Progression Forecasting with Generative AI},
-  year = {2024},
-  url = {https://github.com/gprolcastelo/renalprog}
-}
-```
+If you use this pipeline in your research, please cite this work.
+For details, see the [citation page](../citation.md) file.
 

@@ -9,10 +9,11 @@ import logging
 import sys
 from sklearn.preprocessing import MinMaxScaler
 
+
 def set_seed(seed: int = 2023):
     """
     Set random seed for reproducibility across numpy, random, and torch.
-    
+
     Args:
         seed: Random seed value (default: 2023)
     """
@@ -29,7 +30,7 @@ def configure_logging(
     level: int = logging.INFO,
     format_string: str = None,
     datefmt: str = "%Y-%m-%d %H:%M:%S",
-    handlers: list = None
+    handlers: list = None,
 ) -> None:
     """
     Configure logging for the renalprog package with scientific output formatting.
@@ -82,12 +83,18 @@ def configure_logging(
         format=format_string,
         datefmt=datefmt,
         handlers=handlers,
-        force=True  # Override any existing configuration
+        force=True,  # Override any existing configuration
     )
 
     # Set level for all renalprog loggers
-    for logger_name in ['renalprog', 'renalprog.dataset', 'renalprog.features',
-                        'renalprog.modeling', 'renalprog.trajectories', 'renalprog.plots']:
+    for logger_name in [
+        "renalprog",
+        "renalprog.dataset",
+        "renalprog.features",
+        "renalprog.modeling",
+        "renalprog.trajectories",
+        "renalprog.plots",
+    ]:
         logger = logging.getLogger(logger_name)
         logger.setLevel(level)
 
@@ -95,7 +102,7 @@ def configure_logging(
 def get_device(force_cpu: bool = False):
     """
     Get the appropriate device for computation (cuda if available, else cpu).
-    
+
     Args:
         force_cpu: If True, force CPU usage even if CUDA is available
 
@@ -122,10 +129,10 @@ def get_device(force_cpu: bool = False):
 def count_parameters(model):
     """
     Count the number of trainable parameters in a PyTorch model.
-    
+
     Args:
         model: PyTorch model
-        
+
     Returns:
         int: Number of trainable parameters
     """
@@ -135,42 +142,43 @@ def count_parameters(model):
 def save_model_info(model, path, hyperparams=None):
     """
     Save model information including architecture and hyperparameters.
-    
+
     Args:
         model: PyTorch model
         path: Path to save model info
         hyperparams: Dictionary of hyperparameters
     """
     import json
-    
+
     info = {
         "num_parameters": count_parameters(model),
         "architecture": str(model),
     }
-    
+
     if hyperparams:
         info["hyperparameters"] = hyperparams
-    
-    with open(path, 'w') as f:
+
+    with open(path, "w") as f:
         json.dump(info, f, indent=2)
 
 
 def load_model_info(path):
     """
     Load model information from JSON file.
-    
+
     Args:
         path: Path to model info file
-        
+
     Returns:
         dict: Model information
     """
     import json
-    
-    with open(path, 'r') as f:
+
+    with open(path, "r") as f:
         return json.load(f)
 
-def apply_VAE(data,model_here,y=None):
+
+def apply_VAE(data, model_here, y=None):
     """
 
     :param data:
@@ -185,16 +193,18 @@ def apply_VAE(data,model_here,y=None):
     scaler.fit(data)
     data2 = scaler.transform(data)
     #############################################################################
-#     print("torch no grad")
+    #     print("torch no grad")
     with torch.no_grad():
         if y is None:
             data_latent, mu, logvar, z = model_here(torch.tensor(data2).float())
             # DE-NORMALIZE DATA:
             data_vae = scaler.inverse_transform(data_latent)
-            #return data_vae,mu, logvar, z, None, scaler
+            # return data_vae,mu, logvar, z, None, scaler
         else:
-            data_latent, mu, logvar, z = model_here(torch.tensor(data2).float(),torch.tensor(y).float())
+            data_latent, mu, logvar, z = model_here(
+                torch.tensor(data2).float(), torch.tensor(y).float()
+            )
             # DE-NORMALIZE DATA:
             data_vae = scaler.inverse_transform(data_latent)
-            #return data_vae,mu, logvar, z, condition, scaler
+            # return data_vae,mu, logvar, z, condition, scaler
     return data_vae, mu, logvar, z, scaler

@@ -6,22 +6,20 @@
 
 **A Python package for simulating kidney cancer progression with synthetic data generation and machine learning**
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Cookiecutter Data Science](https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter)](https://cookiecutter-data-science.drivendata.org)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 <p align="center">
   <sub>Logo: <a href="https://www.flaticon.com/free-icons/kidneys" title="kidneys icons">Kidneys icons created by Smashicons - Flaticon</a></sub>
 </p>
 
-
-!!! warning
-    This site is under construction. Some pages may be missing.
-
 ---
 
 ## Overview
 
-`renalprog` is a comprehensive bioinformatics pipeline for analyzing kidney cancer (KIRC) progression using deep learning and pathway enrichment analysis. The package integrates **Variational Autoencoders (VAEs)** with **differential expression analysis** and **gene set enrichment** to model and predict cancer progression trajectories.
+`renalprog` is a comprehensive bioinformatics pipeline for analyzing kidney cancer (KIRC) progression using deep learning and pathway enrichment analysis. The package integrates **Variational Autoencoders (VAEs)** with **differential expression analysis** and **gene set enrichment** to model cancer progression trajectories.
 
 ### Scientific Context
 
@@ -36,7 +34,6 @@ This approach enables researchers to:
 
 - Identify key biological pathways driving cancer progression
 - Predict patient outcomes based on molecular profiles
-- Generate testable hypotheses about therapeutic targets
 - Understand the temporal dynamics of tumor evolution
 
 ---
@@ -45,33 +42,34 @@ This approach enables researchers to:
 
 ### 🔬 Data Processing
 - Automated filtering of low-expression genes
-- Robust outlier detection using Mahalanobis distance
+- Outlier detection using Mahalanobis distance
 - Normalization and batch effect correction
-- Integration with TCGA and other genomics datasets
+- Integration with TCGA bulk RNA-seq datasets
 
 ### 🧠 Deep Learning Models
-- **Variational Autoencoder (VAE)** for unsupervised representation learning
-- **Conditional VAE (CVAE)** for stage-specific modeling
+- **Variational Autoencoder (VAE)** and **Autoencoder (AE)** for unsupervised representation learning
+- **Conditional VAE (CVAE)** for fully supervised tasks
 - Support for custom architectures and hyperparameters
-- GPU acceleration for large-scale datasets
+- GPU acceleration with PyTorch
 
 ### 🔄 Trajectory Generation
 - Generate synthetic patient trajectories between cancer stages
-- Interpolation in latent space with biological constraints
-- Multiple trajectory types (early-to-late, stage-specific, custom)
-- Quality control and validation metrics
+- Interpolation in latent space and decoding to gene expression space
+- Control for clinical covariates (age, gender)
+- Export trajectory gene expression for downstream analysis
+- Visualization of trajectories
+- Integration with enrichment analysis pipeline
 
 ### 📊 Stage Classification
 - XGBoost-based classification of early vs. late stage cancer
-- SHAP values for feature importance and interpretability
 - Cross-validation and performance evaluation
 - Gene signature discovery
 
 ### 🧬 Enrichment Analysis
-- Integration with **DESeq2** for differential expression
+- Integration with **pyDESeq2** for differential expression
 - **GSEA** (Gene Set Enrichment Analysis) for pathway analysis
-- Support for Reactome, KEGG, and custom pathway databases
-- Parallel processing for large-scale analyses
+- Support for Reactome, KEGG, and other pathway databases
+- Parallel (multi CPU and multi node) processing for large-scale analyses
 
 ### 📈 Visualization
 - Comprehensive plotting functions for all analysis steps
@@ -83,48 +81,6 @@ This approach enables researchers to:
 ---
 
 ## Quick Start
-
-### Installation
-
-```bash
-# Clone repository
-git clone https://github.com/gprolcastelo/renalprog.git
-cd renalprog
-
-# Create environment (includes Python and R)
-mamba env create -f environment.yml
-mamba activate renalprog
-
-# Install package
-pip install -e .
-```
-
-See [Installation Guide](getting-started.md) for detailed instructions.
-
-### Basic Usage
-
-```python
-from renalprog import config, dataset, modeling
-
-# Load and process data
-data = dataset.load_data('data/processed/rnaseq_maha.csv')
-processed = dataset.preprocess(data)
-
-# Train VAE
-vae = modeling.VAE(input_dim=processed.shape[1])
-vae.train(processed, epochs=100)
-
-# Generate trajectories
-trajectories = modeling.generate_trajectories(
-    vae=vae,
-    start_stage='early',
-    end_stage='late',
-    n_samples=100
-)
-
-# Run enrichment analysis
-results = modeling.enrichment_analysis(trajectories)
-```
 
 See [Quick Start Tutorial](tutorials/quickstart.md) for a complete example.
 
@@ -183,77 +139,22 @@ graph LR
 ### 📚 For New Users
 Start with:
 
-1. [Installation Guide](getting-started.md) - Set up your environment
+1. [Installation Guide](tutorials/installation.md) - Set up your environment
 2. [Quick Start Tutorial](tutorials/quickstart.md) - Run your first analysis
 3. [Complete Pipeline Tutorial](tutorials/complete-pipeline.md) - End-to-end workflow
-
-### 🔬 For Reproducibility
-Reproduce published results:
-
-1. [System Requirements](reproducibility/requirements.md) - Hardware and software needs
-2. [Data Preparation](reproducibility/data-preparation.md) - Download and prepare data
-3. [Running the Pipeline](reproducibility/pipeline.md) - Step-by-step execution
-4. [Expected Results](reproducibility/results.md) - Validate your outputs
 
 ### 🛠️ For Developers
 Extend and customize:
 
 1. [API Reference](api/index.md) - Complete function documentation
-2. [Architecture Guide](advanced/architecture.md) - Design principles
-3. [Custom Models](advanced/custom-models.md) - Implement new architectures
-4. [Contributing Guidelines](contributing/guidelines.md) - Join development
-
----
-
-## System Requirements
-
-### Minimum Requirements
-- **OS**: Linux, macOS, or Windows (with WSL for enrichment analysis)
-- **Python**: 3.9 or higher
-- **R**: 4.0 or higher (for enrichment analysis)
-- **RAM**: 8 GB
-- **Storage**: 20 GB free space
-
-### Recommended Requirements
-- **RAM**: 16+ GB
-- **CPU**: 8+ cores
-- **GPU**: CUDA-capable GPU with 6+ GB VRAM (for VAE training)
-- **Storage**: 50+ GB on SSD
-
-### Software Dependencies
-- PyTorch 2.0+
-- scikit-learn 1.0+
-- XGBoost 1.5+
-- pandas, numpy, scipy
-- R packages: DESeq2, gprofiler2
-
-See [System Requirements](reproducibility/requirements.md) for complete details.
-
----
-
-## Use Cases
-
-### Cancer Research
-- Model tumor evolution over time
-- Identify driver pathways in progression
-- Predict patient outcomes
-- Discover therapeutic targets
-
-### Computational Biology
-- Learn representations of high-dimensional genomics data
-- Generate synthetic data for validation
-- Integrate multi-omics datasets
-- Perform pathway-level analysis
-
-### Machine Learning Research
-- Apply VAEs to biological data
-- Develop interpretable deep learning models
-- Benchmark generative models
-- Study latent space interpolation
+2. [Contributing Guidelines](contributing/guidelines.md) - Join development
 
 ---
 
 ## Citation
+
+!!! warning "Cite renalprog"
+    This citation is temporal and will be updated upon formal publication.
 
 If you use `renalprog` in your research, please cite:
 
@@ -293,9 +194,8 @@ This work is supported by the EVENFLOW Project and builds upon numerous open-sou
 
 ## Quick Links
 
-- [Installation Guide](getting-started.md)
+- [Installation Guide](tutorials/installation.md)
 - [Quick Start Tutorial](tutorials/quickstart.md)
 - [API Reference](api/index.md)
-- [Reproducibility Guide](reproducibility/index.md)
 - [Contributing Guidelines](contributing/guidelines.md)
 

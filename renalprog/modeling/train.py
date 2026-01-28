@@ -30,6 +30,7 @@ torch.set_default_dtype(torch.float32)
 # MODEL ARCHITECTURES
 # ============================================================================
 
+
 class VAE(nn.Module):
     """Variational Autoencoder (VAE).
 
@@ -43,8 +44,9 @@ class VAE(nn.Module):
         output_layer: Output activation function (default: nn.ReLU)
     """
 
-    def __init__(self, input_dim: int, mid_dim: int, features: int,
-                 output_layer=nn.ReLU):
+    def __init__(
+        self, input_dim: int, mid_dim: int, features: int, output_layer=nn.ReLU
+    ):
         super().__init__()
         self.input_dim = input_dim
         self.mid_dim = mid_dim
@@ -55,7 +57,7 @@ class VAE(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(in_features=input_dim, out_features=mid_dim),
             nn.ReLU(),
-            nn.Linear(in_features=mid_dim, out_features=features * 2)
+            nn.Linear(in_features=mid_dim, out_features=features * 2),
         )
 
         # Decoder: latent -> mid_dim -> reconstruction
@@ -63,7 +65,7 @@ class VAE(nn.Module):
             nn.Linear(in_features=features, out_features=mid_dim),
             nn.ReLU(),
             nn.Linear(in_features=mid_dim, out_features=input_dim),
-            output_layer()
+            output_layer(),
         )
 
     def reparametrize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
@@ -84,8 +86,9 @@ class VAE(nn.Module):
             # During evaluation, return mean directly
             return mu
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor,
-                                                  torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass through VAE.
 
         Args:
@@ -121,8 +124,9 @@ class AE(nn.Module):
         output_layer: Output activation function
     """
 
-    def __init__(self, input_dim: int, mid_dim: int, features: int,
-                 output_layer=nn.ReLU):
+    def __init__(
+        self, input_dim: int, mid_dim: int, features: int, output_layer=nn.ReLU
+    ):
         super().__init__()
         self.input_dim = input_dim
         self.mid_dim = mid_dim
@@ -132,14 +136,14 @@ class AE(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(in_features=input_dim, out_features=mid_dim),
             nn.ReLU(),
-            nn.Linear(in_features=mid_dim, out_features=features)
+            nn.Linear(in_features=mid_dim, out_features=features),
         )
 
         self.decoder = nn.Sequential(
             nn.Linear(in_features=features, out_features=mid_dim),
             nn.ReLU(),
             nn.Linear(in_features=mid_dim, out_features=input_dim),
-            output_layer()
+            output_layer(),
         )
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, None, None, torch.Tensor]:
@@ -170,8 +174,14 @@ class CVAE(VAE):
         output_layer: Output activation function
     """
 
-    def __init__(self, input_dim: int, mid_dim: int, features: int,
-                 num_classes: int, output_layer=nn.ReLU):
+    def __init__(
+        self,
+        input_dim: int,
+        mid_dim: int,
+        features: int,
+        num_classes: int,
+        output_layer=nn.ReLU,
+    ):
         super().__init__(input_dim, mid_dim, features, output_layer)
         self.num_classes = num_classes
 
@@ -179,7 +189,7 @@ class CVAE(VAE):
         self.encoder = nn.Sequential(
             nn.Linear(in_features=input_dim + num_classes, out_features=mid_dim),
             nn.ReLU(),
-            nn.Linear(in_features=mid_dim, out_features=features * 2)
+            nn.Linear(in_features=mid_dim, out_features=features * 2),
         )
 
         # Modified decoder: accepts latent + condition
@@ -189,10 +199,9 @@ class CVAE(VAE):
             nn.Linear(in_features=mid_dim, out_features=input_dim),
         )
 
-    def forward(self, x: torch.Tensor, condition: torch.Tensor) -> Tuple[torch.Tensor,
-                                                                          torch.Tensor,
-                                                                          torch.Tensor,
-                                                                          torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor, condition: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Forward pass through CVAE.
 
         Args:
@@ -228,9 +237,14 @@ class CVAE(VAE):
 # LOSS FUNCTIONS
 # ============================================================================
 
-def vae_loss(reconstruction: torch.Tensor, x: torch.Tensor,
-             mu: torch.Tensor, log_var: torch.Tensor,
-             beta: float = 1.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+
+def vae_loss(
+    reconstruction: torch.Tensor,
+    x: torch.Tensor,
+    mu: torch.Tensor,
+    log_var: torch.Tensor,
+    beta: float = 1.0,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Calculate VAE loss: reconstruction loss + KL divergence.
 
     Args:
@@ -244,7 +258,7 @@ def vae_loss(reconstruction: torch.Tensor, x: torch.Tensor,
         Tuple of (total_loss, reconstruction_loss, kl_divergence)
     """
     # Reconstruction loss (MSE)
-    recon_loss = nn.functional.mse_loss(reconstruction, x, reduction='sum')
+    recon_loss = nn.functional.mse_loss(reconstruction, x, reduction="sum")
 
     # KL divergence: -0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     kl_div = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -255,8 +269,9 @@ def vae_loss(reconstruction: torch.Tensor, x: torch.Tensor,
     return total_loss, recon_loss, kl_div
 
 
-def reconstruction_loss(reconstruction: torch.Tensor, x: torch.Tensor,
-                       reduction: str = 'sum') -> torch.Tensor:
+def reconstruction_loss(
+    reconstruction: torch.Tensor, x: torch.Tensor, reduction: str = "sum"
+) -> torch.Tensor:
     """Calculate reconstruction loss (MSE).
 
     Args:
@@ -287,12 +302,9 @@ def kl_divergence(mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
 # BETA ANNEALING SCHEDULE
 # ============================================================================
 
+
 def frange_cycle_linear(
-    start: float,
-    stop: float,
-    n_epoch: int,
-    n_cycle: int = 4,
-    ratio: float = 0.5
+    start: float, stop: float, n_epoch: int, n_cycle: int = 4, ratio: float = 0.5
 ) -> np.ndarray:
     """
     Generate a linear cyclical schedule for beta hyperparameter.
@@ -341,8 +353,13 @@ def frange_cycle_linear(
 # DATA LOADING
 # ============================================================================
 
-def create_dataloader(X: np.ndarray, y: Optional[np.ndarray] = None,
-                     batch_size: int = 32, shuffle: bool = True) -> torch.utils.data.DataLoader:
+
+def create_dataloader(
+    X: np.ndarray,
+    y: Optional[np.ndarray] = None,
+    batch_size: int = 32,
+    shuffle: bool = True,
+) -> torch.utils.data.DataLoader:
     """Create DataLoader with MinMax normalization.
 
     Args:
@@ -378,9 +395,15 @@ def create_dataloader(X: np.ndarray, y: Optional[np.ndarray] = None,
 # TRAINING FUNCTIONS
 # ============================================================================
 
-def train_epoch(model: nn.Module, dataloader: torch.utils.data.DataLoader,
-               optimizer: torch.optim.Optimizer, device: str,
-               config: VAEConfig, beta: Optional[float] = None) -> Dict[str, float]:
+
+def train_epoch(
+    model: nn.Module,
+    dataloader: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    device: str,
+    config: VAEConfig,
+    beta: Optional[float] = None,
+) -> Dict[str, float]:
     """Train model for one epoch.
 
     Args:
@@ -402,7 +425,7 @@ def train_epoch(model: nn.Module, dataloader: torch.utils.data.DataLoader,
     total_kl = 0.0
 
     # Add progress bar
-    pbar = tqdm(dataloader, desc='Training', leave=False)
+    pbar = tqdm(dataloader, desc="Training", leave=False)
     for batch in pbar:
         if len(batch) == 2:
             data, _ = batch
@@ -428,25 +451,32 @@ def train_epoch(model: nn.Module, dataloader: torch.utils.data.DataLoader,
         total_kl += kl.item()
 
         # Update progress bar
-        pbar.set_postfix({
-            'loss': f'{loss.item() / len(data):.4f}',
-            'recon': f'{recon.item() / len(data):.4f}',
-            'kl': f'{kl.item() / len(data):.4f}'
-        })
+        pbar.set_postfix(
+            {
+                "loss": f"{loss.item() / len(data):.4f}",
+                "recon": f"{recon.item() / len(data):.4f}",
+                "kl": f"{kl.item() / len(data):.4f}",
+            }
+        )
 
     # Average losses
     n_samples = len(dataloader.dataset)
     metrics = {
-        'loss': total_loss / n_samples,
-        'recon_loss': total_recon / n_samples,
-        'kl_loss': total_kl / n_samples,
+        "loss": total_loss / n_samples,
+        "recon_loss": total_recon / n_samples,
+        "kl_loss": total_kl / n_samples,
     }
 
     return metrics
 
 
-def evaluate_model(model: nn.Module, dataloader: torch.utils.data.DataLoader,
-                  device: str, config: VAEConfig, beta: Optional[float] = None) -> Dict[str, float]:
+def evaluate_model(
+    model: nn.Module,
+    dataloader: torch.utils.data.DataLoader,
+    device: str,
+    config: VAEConfig,
+    beta: Optional[float] = None,
+) -> Dict[str, float]:
     """Evaluate model on validation/test set.
 
     Args:
@@ -468,7 +498,7 @@ def evaluate_model(model: nn.Module, dataloader: torch.utils.data.DataLoader,
 
     with torch.no_grad():
         # Add progress bar
-        pbar = tqdm(dataloader, desc='Validation', leave=False)
+        pbar = tqdm(dataloader, desc="Validation", leave=False)
         for batch in pbar:
             if len(batch) == 2:
                 data, _ = batch
@@ -489,18 +519,20 @@ def evaluate_model(model: nn.Module, dataloader: torch.utils.data.DataLoader,
             total_kl += kl.item()
 
             # Update progress bar
-            pbar.set_postfix({
-                'loss': f'{loss.item() / len(data):.4f}',
-                'recon': f'{recon.item() / len(data):.4f}',
-                'kl': f'{kl.item() / len(data):.4f}'
-            })
+            pbar.set_postfix(
+                {
+                    "loss": f"{loss.item() / len(data):.4f}",
+                    "recon": f"{recon.item() / len(data):.4f}",
+                    "kl": f"{kl.item() / len(data):.4f}",
+                }
+            )
 
     # Average losses
     n_samples = len(dataloader.dataset)
     metrics = {
-        'loss': total_loss / n_samples,
-        'recon_loss': total_recon / n_samples,
-        'kl_loss': total_kl / n_samples,
+        "loss": total_loss / n_samples,
+        "recon_loss": total_recon / n_samples,
+        "kl_loss": total_kl / n_samples,
     }
 
     return metrics
@@ -532,13 +564,13 @@ def train_vae(
         Tuple of (trained_model, training_history)
     """
     # Convert DataFrames to numpy arrays if needed
-    if hasattr(X_train, 'values'):  # Check if it's a DataFrame
+    if hasattr(X_train, "values"):  # Check if it's a DataFrame
         X_train = X_train.values
-    if hasattr(X_test, 'values'):  # Check if it's a DataFrame
+    if hasattr(X_test, "values"):  # Check if it's a DataFrame
         X_test = X_test.values
-    if y_train is not None and hasattr(y_train, 'values'):
+    if y_train is not None and hasattr(y_train, "values"):
         y_train = y_train.values
-    if y_test is not None and hasattr(y_test, 'values'):
+    if y_test is not None and hasattr(y_test, "values"):
         y_test = y_test.values
 
     if config is None:
@@ -549,13 +581,13 @@ def train_vae(
 
     # Setup save directory
     if save_dir is None:
-        timestamp = datetime.now().strftime('%Y%m%d')
+        timestamp = datetime.now().strftime("%Y%m%d")
         save_dir = Path(f"models/{timestamp}_VAE_KIRC")
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
     # Save config
-    save_model_config(config, save_dir / 'config.json')
+    save_model_config(config, save_dir / "config.json")
 
     # Setup device
     device = get_device(force_cpu=force_cpu)
@@ -568,7 +600,9 @@ def train_vae(
         features=config.LATENT_DIM,
     ).to(device)
 
-    logger.info(f"Model: VAE(input_dim={config.INPUT_DIM}, mid_dim={config.MID_DIM}, latent_dim={config.LATENT_DIM})")
+    logger.info(
+        f"Model: VAE(input_dim={config.INPUT_DIM}, mid_dim={config.MID_DIM}, latent_dim={config.LATENT_DIM})"
+    )
     logger.info(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     # Setup optimizer
@@ -577,8 +611,8 @@ def train_vae(
     # Setup checkpointer
     checkpointer = ModelCheckpointer(
         save_dir=save_dir,
-        monitor='val_loss',
-        mode='min',
+        monitor="val_loss",
+        mode="min",
         save_freq=config.CHECKPOINT_FREQ,
         keep_last_n=3,
     )
@@ -589,7 +623,7 @@ def train_vae(
         checkpoint_info = checkpointer.load_checkpoint(
             resume_from, model, optimizer, device=str(device)
         )
-        start_epoch = checkpoint_info['epoch'] + 1
+        start_epoch = checkpoint_info["epoch"] + 1
         logger.info(f"Resuming training from epoch {start_epoch}")
 
     # Create dataloaders
@@ -598,13 +632,13 @@ def train_vae(
 
     # Training history
     history = {
-        'train_loss': [],
-        'val_loss': [],
-        'train_recon_loss': [],
-        'train_kl_loss': [],
-        'val_recon_loss': [],
-        'val_kl_loss': [],
-        'beta_schedule': [],  # Track beta values
+        "train_loss": [],
+        "val_loss": [],
+        "train_recon_loss": [],
+        "train_kl_loss": [],
+        "val_recon_loss": [],
+        "val_kl_loss": [],
+        "beta_schedule": [],  # Track beta values
     }
 
     # Setup beta annealing schedule
@@ -614,7 +648,7 @@ def train_vae(
             stop=config.BETA,
             n_epoch=config.EPOCHS,
             n_cycle=config.BETA_CYCLES,
-            ratio=config.BETA_RATIO
+            ratio=config.BETA_RATIO,
         )
         logger.info(
             f"Using cyclical beta annealing: "
@@ -629,49 +663,55 @@ def train_vae(
     logger.info(f"Starting training for {config.EPOCHS} epochs")
 
     # Add epoch progress bar
-    epoch_pbar = tqdm(range(start_epoch, config.EPOCHS), desc='Epochs', position=0)
+    epoch_pbar = tqdm(range(start_epoch, config.EPOCHS), desc="Epochs", position=0)
     for epoch in epoch_pbar:
         # Get beta for this epoch from schedule
         current_beta = beta_schedule[epoch]
 
         # Train
-        train_metrics = train_epoch(model, train_loader, optimizer, device, config, beta=current_beta)
+        train_metrics = train_epoch(
+            model, train_loader, optimizer, device, config, beta=current_beta
+        )
 
         # Validate
-        val_metrics = evaluate_model(model, test_loader, device, config, beta=current_beta)
+        val_metrics = evaluate_model(
+            model, test_loader, device, config, beta=current_beta
+        )
 
         # Update history
-        history['train_loss'].append(train_metrics['loss'])
-        history['val_loss'].append(val_metrics['loss'])
-        history['train_recon_loss'].append(train_metrics['recon_loss'])
-        history['train_kl_loss'].append(train_metrics['kl_loss'])
-        history['val_recon_loss'].append(val_metrics['recon_loss'])
-        history['val_kl_loss'].append(val_metrics['kl_loss'])
-        history['beta_schedule'].append(float(current_beta))
+        history["train_loss"].append(train_metrics["loss"])
+        history["val_loss"].append(val_metrics["loss"])
+        history["train_recon_loss"].append(train_metrics["recon_loss"])
+        history["train_kl_loss"].append(train_metrics["kl_loss"])
+        history["val_recon_loss"].append(val_metrics["recon_loss"])
+        history["val_kl_loss"].append(val_metrics["kl_loss"])
+        history["beta_schedule"].append(float(current_beta))
 
         # Update epoch progress bar
-        epoch_pbar.set_postfix({
-            'train_loss': f"{train_metrics['loss']:.4f}",
-            'val_loss': f"{val_metrics['loss']:.4f}",
-            'beta': f"{current_beta:.3f}"
-        })
+        epoch_pbar.set_postfix(
+            {
+                "train_loss": f"{train_metrics['loss']:.4f}",
+                "val_loss": f"{val_metrics['loss']:.4f}",
+                "beta": f"{current_beta:.3f}",
+            }
+        )
 
         # Log progress
         if (epoch + 1) % 10 == 0 or epoch == 0:
             logger.info(
-                f"Epoch {epoch+1}/{config.EPOCHS} - "
+                f"Epoch {epoch + 1}/{config.EPOCHS} - "
                 f"train_loss: {train_metrics['loss']:.4f}, "
                 f"val_loss: {val_metrics['loss']:.4f}"
             )
 
         # Combine metrics for checkpointing
         current_metrics = {
-            'train_loss': train_metrics['loss'],
-            'val_loss': val_metrics['loss'],
-            'train_recon': train_metrics['recon_loss'],
-            'train_kl': train_metrics['kl_loss'],
-            'val_recon': val_metrics['recon_loss'],
-            'val_kl': val_metrics['kl_loss'],
+            "train_loss": train_metrics["loss"],
+            "val_loss": val_metrics["loss"],
+            "train_recon": train_metrics["recon_loss"],
+            "train_kl": train_metrics["kl_loss"],
+            "val_recon": val_metrics["recon_loss"],
+            "val_kl": val_metrics["kl_loss"],
         }
 
         # # Save periodic checkpoint
@@ -694,6 +734,7 @@ def train_vae(
 # POSTPROCESSING NETWORK (VAE_plus_bias alternative)
 # ============================================================================
 
+
 class NetworkReconstruction(nn.Module):
     """
     Deep neural network to adjust VAE reconstruction.
@@ -710,13 +751,15 @@ class NetworkReconstruction(nn.Module):
         layers = []
         for i in range(len(layer_dims) - 1):
             layers.append(nn.Linear(layer_dims[i], layer_dims[i + 1]))
-            if i < len(layer_dims) - 2:  # Don't add ReLU after last layer
-                layers.append(nn.ReLU())
+            # Add ReLU after all layers including the final output layer
+            # This ensures all outputs are non-negative (suitable for gene expression)
+            layers.append(nn.ReLU())
         self.network = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through network."""
         return self.network(x)
+
 
 def train_reconstruction_network(
     network: nn.Module,
@@ -727,7 +770,7 @@ def train_reconstruction_network(
     epochs: int = 200,
     lr: float = 1e-4,
     batch_size: int = 32,
-    device: str = 'cpu',
+    device: str = "cpu",
 ) -> Tuple[nn.Module, List[float], List[float]]:
     """
     Train reconstruction network to adjust VAE output.
@@ -752,12 +795,14 @@ def train_reconstruction_network(
 
     # Create dataloaders
     train_dataset = torch.utils.data.TensorDataset(
-        torch.tensor(vae_reconstructions.loc[train_indices].values, dtype=torch.float32),
-        torch.tensor(original_data.loc[train_indices].values, dtype=torch.float32)
+        torch.tensor(
+            vae_reconstructions.loc[train_indices].values, dtype=torch.float32
+        ),
+        torch.tensor(original_data.loc[train_indices].values, dtype=torch.float32),
     )
     test_dataset = torch.utils.data.TensorDataset(
         torch.tensor(vae_reconstructions.loc[test_indices].values, dtype=torch.float32),
-        torch.tensor(original_data.loc[test_indices].values, dtype=torch.float32)
+        torch.tensor(original_data.loc[test_indices].values, dtype=torch.float32),
     )
 
     train_loader = torch.utils.data.DataLoader(
@@ -773,14 +818,14 @@ def train_reconstruction_network(
     logger.info(f"Training reconstruction network for {epochs} epochs")
 
     # Add epoch progress bar
-    epoch_pbar = tqdm(range(epochs), desc='Reconstruction Network Training', position=0)
+    epoch_pbar = tqdm(range(epochs), desc="Reconstruction Network Training", position=0)
     for epoch in epoch_pbar:
         # Training
         network.train()
         running_loss = 0.0
 
         # Add batch progress bar
-        train_pbar = tqdm(train_loader, desc='Train', leave=False, position=1)
+        train_pbar = tqdm(train_loader, desc="Train", leave=False, position=1)
         for vae_recon, original in train_pbar:
             vae_recon = vae_recon.to(device)
             original = original.to(device)
@@ -794,7 +839,7 @@ def train_reconstruction_network(
             running_loss += loss.item()
 
             # Update batch progress bar
-            train_pbar.set_postfix({'batch_loss': f'{loss.item():.6f}'})
+            train_pbar.set_postfix({"batch_loss": f"{loss.item():.6f}"})
 
         train_loss = running_loss / len(train_loader)
         loss_train.append(train_loss)
@@ -804,7 +849,7 @@ def train_reconstruction_network(
         running_loss = 0.0
         with torch.no_grad():
             # Add validation batch progress bar
-            val_pbar = tqdm(test_loader, desc='Val', leave=False, position=1)
+            val_pbar = tqdm(test_loader, desc="Val", leave=False, position=1)
             for vae_recon, original in val_pbar:
                 vae_recon = vae_recon.to(device)
                 original = original.to(device)
@@ -812,21 +857,22 @@ def train_reconstruction_network(
                 output = network(vae_recon)
                 loss = criterion(output, original)
                 running_loss += loss.item()
-                
+
                 # Update validation progress bar
-                val_pbar.set_postfix({'batch_loss': f'{loss.item():.6f}'})
+                val_pbar.set_postfix({"batch_loss": f"{loss.item():.6f}"})
 
         test_loss = running_loss / len(test_loader)
         loss_test.append(test_loss)
-        
+
         # Update epoch progress bar with current metrics
-        epoch_pbar.set_postfix({
-            'train_loss': f'{train_loss:.6f}',
-            'test_loss': f'{test_loss:.6f}'
-        })
+        epoch_pbar.set_postfix(
+            {"train_loss": f"{train_loss:.6f}", "test_loss": f"{test_loss:.6f}"}
+        )
 
         if (epoch + 1) % 20 == 0:
-            logger.info(f"Epoch {epoch+1}/{epochs} - Train Loss: {train_loss:.6f}, Test Loss: {test_loss:.6f}")
+            logger.info(
+                f"Epoch {epoch + 1}/{epochs} - Train Loss: {train_loss:.6f}, Test Loss: {test_loss:.6f}"
+            )
 
     logger.info("Reconstruction network training complete")
     return network, loss_train, loss_test
@@ -839,7 +885,7 @@ def train_vae_with_postprocessing(
     reconstruction_network_dims: Optional[List[int]] = None,
     reconstruction_epochs: int = 200,
     reconstruction_lr: float = 1e-4,
-    batch_size_reconstruction:int = 8,
+    batch_size_reconstruction: int = 8,
     save_dir: Optional[Path] = None,
     force_cpu: bool = False,
 ) -> Tuple[nn.Module, nn.Module, Dict[str, list], Dict[str, list]]:
@@ -868,14 +914,14 @@ def train_vae_with_postprocessing(
     logger.info("Starting full VAE + postprocessing pipeline")
 
     # Convert DataFrames to numpy arrays if needed
-    if hasattr(X_train, 'values'):  # Check if it's a DataFrame
+    if hasattr(X_train, "values"):  # Check if it's a DataFrame
         X_train = X_train.values
-    if hasattr(X_test, 'values'):  # Check if it's a DataFrame
+    if hasattr(X_test, "values"):  # Check if it's a DataFrame
         X_test = X_test.values
 
     # Setup
     if save_dir is None:
-        timestamp = datetime.now().strftime('%Y%m%d')
+        timestamp = datetime.now().strftime("%Y%m%d")
         save_dir = Path(f"models/{timestamp}_VAE_with_reconstruction")
     save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -883,10 +929,11 @@ def train_vae_with_postprocessing(
     # Step 1: Train VAE
     logger.info("Step 1: Training VAE")
     vae_model, vae_history = train_vae(
-        X_train, X_test,
+        X_train,
+        X_test,
         config=vae_config,
         save_dir=save_dir / "vae",
-        force_cpu=force_cpu
+        force_cpu=force_cpu,
     )
 
     # Step 2: Get VAE reconstructions
@@ -894,13 +941,15 @@ def train_vae_with_postprocessing(
     device = get_device(force_cpu=force_cpu)
     vae_model.eval()
 
-    # CRITICAL: Normalize data before passing to VAE (same as during training)
+    # Normalize data before passing to VAE (same as during training)
     # The VAE was trained on normalized [0,1] data, so inference must use the same scale
     logger.info("Normalizing data for VAE inference (same as training)")
     scaler = MinMaxScaler()
     X_train_normalized = scaler.fit_transform(X_train)
     X_test_normalized = scaler.transform(X_test)
-    logger.info(f"Data normalized: min={X_train_normalized.min():.4f}, max={X_train_normalized.max():.4f}")
+    logger.info(
+        f"Data normalized: min={X_train_normalized.min():.4f}, max={X_train_normalized.max():.4f}"
+    )
 
     with torch.no_grad():
         X_train_tensor = torch.tensor(X_train_normalized, dtype=torch.float32).to(device)
@@ -942,7 +991,7 @@ def train_vae_with_postprocessing(
         epochs=reconstruction_epochs,
         lr=reconstruction_lr,
         batch_size=batch_size_reconstruction,
-        device=str(device)
+        device=str(device),
     )
 
     # Step 4: Save everything
@@ -952,25 +1001,24 @@ def train_vae_with_postprocessing(
     torch.save(network.state_dict(), save_dir / "reconstruction_network.pth")
 
     # Save network dimensions
-    pd.DataFrame([reconstruction_network_dims],
-                 columns=['in_dim', 'layer1_dim', 'layer2_dim', 'layer3_dim', 'out_dim']
+    pd.DataFrame(
+        [reconstruction_network_dims],
+        columns=["in_dim", "layer1_dim", "layer2_dim", "layer3_dim", "out_dim"],
     ).to_csv(save_dir / "network_dims.csv", index=False)
 
     # Save losses
-    pd.DataFrame({'train_loss': loss_train, 'test_loss': loss_test}
-    ).to_csv(save_dir / "reconstruction_losses.csv", index=False)
+    pd.DataFrame({"train_loss": loss_train, "test_loss": loss_test}).to_csv(
+        save_dir / "reconstruction_losses.csv", index=False
+    )
 
     # Plot losses using Plotly
     from renalprog.plots import plot_reconstruction_losses
+
     plot_reconstruction_losses(
-        loss_train, loss_test,
-        save_path=save_dir / "reconstruction_losses"
+        loss_train, loss_test, save_path=save_dir / "reconstruction_losses"
     )
 
-    reconstruction_history = {
-        'train_loss': loss_train,
-        'test_loss': loss_test
-    }
+    reconstruction_history = {"train_loss": loss_train, "test_loss": loss_test}
 
     logger.info(f"Full pipeline complete! Models saved to {save_dir}")
 
@@ -983,23 +1031,23 @@ def train_postprocessing_network(
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
     config: Optional[Dict] = None,
-    save_dir: Optional[Path] = None
+    save_dir: Optional[Path] = None,
 ) -> nn.Module:
     """
     Train postprocessing network to adjust VAE reconstruction.
-    
+
     Args:
         vae_model: Trained VAE model
         X_train: Training data
         X_test: Test data
         config: Configuration dictionary
         save_dir: Directory to save model
-        
+
     Returns:
         Trained postprocessing network model
     """
     logger.info("Training postprocessing network")
-    
+
     # TODO: Migrate from src/adjust_reconstruction.py
     raise NotImplementedError(
         "train_postprocessing_network() needs implementation from src/adjust_reconstruction.py"
@@ -1010,9 +1058,13 @@ def train_postprocessing_network(
 # CLASSIFICATION FUNCTIONS
 # ============================================================================
 
-def classification_metrics(y_test_le: np.ndarray, y_pred: np.ndarray,
-                          num_classes: int, weights_test: Optional[np.ndarray] = None
-                          ) -> pd.DataFrame:
+
+def classification_metrics(
+    y_test_le: np.ndarray,
+    y_pred: np.ndarray,
+    num_classes: int,
+    weights_test: Optional[np.ndarray] = None,
+) -> pd.DataFrame:
     """
     Calculate classification metrics for model evaluation.
 
@@ -1028,14 +1080,18 @@ def classification_metrics(y_test_le: np.ndarray, y_pred: np.ndarray,
     Returns:
         DataFrame with classification metrics, one per column
     """
-    from sklearn.metrics import (classification_report, roc_auc_score, 
-                                 average_precision_score, balanced_accuracy_score,
-                                 cohen_kappa_score, log_loss)
+    from sklearn.metrics import (
+        classification_report,
+        roc_auc_score,
+        average_precision_score,
+        balanced_accuracy_score,
+        cohen_kappa_score,
+    )
     from sklearn.preprocessing import label_binarize
-    
+
     # Initialize y_pred_prob for binary classification
     y_pred_prob = None
-    
+
     # Binarize test labels for metrics that need it
     if num_classes > 2:
         y_test_bin = label_binarize(y_test_le, classes=np.arange(num_classes))
@@ -1048,53 +1104,71 @@ def classification_metrics(y_test_le: np.ndarray, y_pred: np.ndarray,
         raise ValueError("Number of classes must be at least 2")
 
     # Get classification report
-    report = classification_report(y_true=y_test_le, y_pred=y_pred_labels,
-                                   output_dict=True, zero_division=0)
+    report = classification_report(
+        y_true=y_test_le, y_pred=y_pred_labels, output_dict=True, zero_division=0
+    )
 
     # Get macro metrics
-    macro_precision = report['macro avg']['precision']
-    macro_recall = report['macro avg']['recall']
-    macro_f1_score = report['macro avg']['f1-score']
+    macro_precision = report["macro avg"]["precision"]
+    macro_recall = report["macro avg"]["recall"]
+    macro_f1_score = report["macro avg"]["f1-score"]
 
     # Calculate AUC-ROC and AUC-PR
     if num_classes == 2:
         auc_roc = roc_auc_score(y_test_bin, y_pred_prob, sample_weight=weights_test)
-        auc_pr = average_precision_score(y_test_bin, y_pred_prob, sample_weight=weights_test)
+        auc_pr = average_precision_score(
+            y_test_bin, y_pred_prob, sample_weight=weights_test
+        )
     else:
         # For multi-class: calculate macro average
-        auc_roc = roc_auc_score(y_test_bin, y_pred, multi_class='ovr',
-                               average='macro', sample_weight=weights_test)
-        auc_pr = average_precision_score(y_test_bin, y_pred,
-                                        average='macro', sample_weight=weights_test)
+        auc_roc = roc_auc_score(
+            y_test_bin,
+            y_pred,
+            multi_class="ovr",
+            average="macro",
+            sample_weight=weights_test,
+        )
+        auc_pr = average_precision_score(
+            y_test_bin, y_pred, average="macro", sample_weight=weights_test
+        )
 
     # Calculate balanced accuracy
-    balanced_acc = balanced_accuracy_score(y_test_le, y_pred_labels,
-                                           sample_weight=weights_test)
+    balanced_acc = balanced_accuracy_score(
+        y_test_le, y_pred_labels, sample_weight=weights_test
+    )
 
     # Calculate Cohen's Kappa
-    cohens_kappa = cohen_kappa_score(y_test_le, y_pred_labels, 
-                                     sample_weight=weights_test)
-    
+    cohens_kappa = cohen_kappa_score(
+        y_test_le, y_pred_labels, sample_weight=weights_test
+    )
+
     # Compile metrics into DataFrame
     # Note: We repeat metrics for each class to match original implementation
     # (this allows setting index to class names, even though metrics are aggregated)
     metrics_data = {
-        'Precision': [macro_precision] * num_classes,
-        'Recall': [macro_recall] * num_classes,
-        'F1-score': [macro_f1_score] * num_classes,
-        'AUC-ROC': [auc_roc] * num_classes,
-        'AUC-PR': [auc_pr] * num_classes,
-        'Balanced Accuracy': [balanced_acc] * num_classes,
-        "Cohen's Kappa": [cohens_kappa] * num_classes
+        "Precision": [macro_precision] * num_classes,
+        "Recall": [macro_recall] * num_classes,
+        "F1-score": [macro_f1_score] * num_classes,
+        "AUC-ROC": [auc_roc] * num_classes,
+        "AUC-PR": [auc_pr] * num_classes,
+        "Balanced Accuracy": [balanced_acc] * num_classes,
+        "Cohen's Kappa": [cohens_kappa] * num_classes,
     }
-    
+
     metrics = pd.DataFrame(metrics_data)
-    
+
     return metrics
 
 
-def optimize_xgboost(trial, dtrain, dvalid, y_valid, num_classes: int,
-                     num_threads: int, progress_bar=None) -> float:
+def optimize_xgboost(
+    trial,
+    dtrain,
+    dvalid,
+    y_valid,
+    num_classes: int,
+    num_threads: int,
+    progress_bar=None,
+) -> float:
     """
     Optuna objective function for XGBoost hyperparameter optimization.
 
@@ -1116,26 +1190,27 @@ def optimize_xgboost(trial, dtrain, dvalid, y_valid, num_classes: int,
 
     # Define the parameter space
     param = {
-        'verbosity': 0,
-        'silent': 1,
-        'booster': 'gbtree',
-        'lambda': trial.suggest_float('lambda', 1e-8, 1, log=True),
-        'alpha': trial.suggest_float('alpha', 1e-8, 1, log=True),
+        "verbosity": 0,
+        "silent": 1,
+        "booster": "gbtree",
+        "lambda": trial.suggest_float("lambda", 1e-8, 1, log=True),
+        "alpha": trial.suggest_float("alpha", 1e-8, 1, log=True),
     }
 
-    if param['booster'] in ['gbtree', 'dart']:
-        param['max_depth'] = trial.suggest_int('max_depth', 1, 9)
-        param['eta'] = trial.suggest_float('eta', 1e-8, 1, log=True)
-        param['gamma'] = trial.suggest_float('gamma', 1e-8, 1, log=True)
-        param['grow_policy'] = trial.suggest_categorical('grow_policy',
-                                                         ['depthwise', 'lossguide'])
-        param['min_child_weight'] = trial.suggest_int('min_child_weight', 1, 10)
+    if param["booster"] in ["gbtree", "dart"]:
+        param["max_depth"] = trial.suggest_int("max_depth", 1, 9)
+        param["eta"] = trial.suggest_float("eta", 1e-8, 1, log=True)
+        param["gamma"] = trial.suggest_float("gamma", 1e-8, 1, log=True)
+        param["grow_policy"] = trial.suggest_categorical(
+            "grow_policy", ["depthwise", "lossguide"]
+        )
+        param["min_child_weight"] = trial.suggest_int("min_child_weight", 1, 10)
 
     my_params = {
         "objective": "multi:softprob",
         "tree_method": "exact",
         "num_class": num_classes,
-        'nthread': num_threads
+        "nthread": num_threads,
     }
 
     param = {**param, **my_params}
@@ -1174,7 +1249,7 @@ def classification_benchmark(
     num_threads: Optional[int] = None,
     n_trials: int = 100,
     optimization: bool = True,
-    tree_method: str = 'exact'
+    tree_method: str = "exact",
 ) -> Tuple:
     """
     Train and evaluate an XGBoost classifier with hyperparameter optimization.
@@ -1212,14 +1287,17 @@ def classification_benchmark(
     from sklearn.utils.class_weight import compute_class_weight
 
     # Validate inputs
-    assert classification_type in ['unbalanced', 'weighted'], \
+    assert classification_type in ["unbalanced", "weighted"], (
         "classification_type must be 'unbalanced' or 'weighted'"
-    assert tree_method in ['exact', 'approx', 'hist'], \
+    )
+    assert tree_method in ["exact", "approx", "hist"], (
         "tree_method must be 'exact', 'approx', or 'hist'"
+    )
 
     # Set default num_threads
     if num_threads is None:
         import os
+
         num_threads = max(1, os.cpu_count() - 1)
 
     # Split the data
@@ -1240,11 +1318,11 @@ def classification_benchmark(
     classes_dict = {key: value for value, key in enumerate(classes)}
 
     # Handle class weights for balanced classification
-    if classification_type == 'weighted':
-        class_weights = compute_class_weight('balanced', classes=classes, y=y_data)
+    if classification_type == "weighted":
+        class_weights = compute_class_weight("balanced", classes=classes, y=y_data)
 
         # Create weight dictionary
-        class_weight_dict = dict(zip(classes, class_weights))
+        dict(zip(classes, class_weights))
 
         # Assign weights to samples
         weights_train = np.zeros(len(y_train_le))
@@ -1265,27 +1343,32 @@ def classification_benchmark(
 
     # Base parameters
     my_params = {
-        'objective': 'multi:softprob',
-        'booster': 'gbtree',
-        'tree_method': tree_method,
-        'num_class': num_classes,
-        'nthread': num_threads
+        "objective": "multi:softprob",
+        "booster": "gbtree",
+        "tree_method": tree_method,
+        "num_class": num_classes,
+        "nthread": num_threads,
     }
 
     # Hyperparameter optimization
     if optimization:
         # Run Optuna optimization silently
         optuna.logging.set_verbosity(optuna.logging.ERROR)
-        study = optuna.create_study(direction='minimize')
+        study = optuna.create_study(direction="minimize")
 
         # Optimize without progress bar
         study.optimize(
             lambda trial: optimize_xgboost(
-                trial, dtrain_clf, dtest_clf, y_test_le,
-                num_classes, num_threads, progress_bar=None
+                trial,
+                dtrain_clf,
+                dtest_clf,
+                y_test_le,
+                num_classes,
+                num_threads,
+                progress_bar=None,
             ),
             n_trials=n_trials,
-            show_progress_bar=False
+            show_progress_bar=False,
         )
 
         # Get best parameters
@@ -1304,7 +1387,14 @@ def classification_benchmark(
     metrics = classification_metrics(y_test_le, y_pred, num_classes, weights_test)
     metrics.index = classes_dict.keys()
 
-    return model, metrics, y_test_le, y_pred, (X_train, X_test, y_train, y_test), all_params
+    return (
+        model,
+        metrics,
+        y_test_le,
+        y_pred,
+        (X_train, X_test, y_train, y_test),
+        all_params,
+    )
 
 
 def train_stage_classifier(
@@ -1314,11 +1404,11 @@ def train_stage_classifier(
     y_test: np.ndarray,
     model_type: str = "xgboost",
     config: Optional[Dict] = None,
-    save_dir: Optional[Path] = None
+    save_dir: Optional[Path] = None,
 ) -> Any:
     """
     Train a classifier for cancer stage prediction.
-    
+
     Args:
         X_train: Training features
         y_train: Training labels
@@ -1327,12 +1417,12 @@ def train_stage_classifier(
         model_type: Type of classifier ("xgboost", "random_forest", etc.)
         config: Configuration dictionary
         save_dir: Directory to save model
-        
+
     Returns:
         Trained classifier model
     """
     logger.info(f"Training {model_type} stage classifier")
-    
+
     if model_type == "xgboost":
         # TODO: Migrate from src/xgb_classifier.py
         raise NotImplementedError(
@@ -1340,4 +1430,3 @@ def train_stage_classifier(
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
-

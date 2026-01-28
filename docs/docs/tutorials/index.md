@@ -24,26 +24,6 @@ Step-by-step walkthrough of the entire analysis pipeline:
 ### 🎨 Visualization
 - **[Visualization Guide](visualization.md)**: Create publication-quality figures
 
-## Learning Paths
-
-### For Biologists
-If you're primarily interested in **biological insights**:
-
-1. Start with [Quick Start](quickstart.md)
-2. Read [Data Requirements](data-requirements.md) to understand the data
-3. Follow [Complete Pipeline](complete-pipeline.md) end-to-end
-4. Focus on [Enrichment Analysis](step6-enrichment.md) for pathway interpretation
-5. Use [Visualization Guide](visualization.md) for publication figures
-
-### For Computational Scientists
-If you want to **customize models** or **develop new methods**:
-
-1. Complete [Quick Start](quickstart.md)
-2. Study [VAE Training](step2-vae-training.md) in detail
-3. Explore [API Reference](../api/index.md) for implementation details
-4. Read [Custom Models](../advanced/custom-models.md) for extending functionality
-5. Review [Architecture](../advanced/architecture.md) for design principles
-
 ### For Reproducing Published Results
 If you want to **reproduce the paper**:
 
@@ -54,11 +34,6 @@ If you want to **reproduce the paper**:
 3. Uses the exact models from the paper
 
 **Option 2: Training from Scratch**
-
-1. Follow [System Requirements](../reproducibility/requirements.md)
-2. Complete [Data Preparation](../reproducibility/data-preparation.md)
-3. Execute [Running the Pipeline](../reproducibility/pipeline.md)
-4. Validate using [Expected Results](../reproducibility/results.md)
 
 ## Tutorial Conventions
 
@@ -111,35 +86,17 @@ renalprog/
 
 Before starting these tutorials, ensure you have:
 
-1. ✅ Installed `renalprog` ([Installation Guide](../getting-started.md))
-2. ✅ Python 3.9+ and R 4.0+ available
-3. ✅ At least 16 GB RAM (8 GB minimum)
-4. ✅ 50+ GB free disk space
-5. ✅ (Optional) CUDA-capable GPU for faster training
-
-## Time Estimates
-
-| Tutorial | Reading Time | Execution Time | Difficulty |
-|----------|--------------|----------------|------------|
-| Quick Start | 10 min | 15 min | ⭐ Easy |
-| Data Processing | 15 min | 30 min | ⭐ Easy |
-| VAE Training | 20 min | 2-4 hours* | ⭐⭐ Moderate |
-| Reconstruction | 10 min | 10 min | ⭐ Easy |
-| Trajectories | 15 min | 30 min | ⭐⭐ Moderate |
-| Classification | 20 min | 1 hour | ⭐⭐ Moderate |
-| Enrichment | 25 min | 2-6 hours* | ⭐⭐⭐ Advanced |
-| Visualization | 15 min | 30 min | ⭐⭐ Moderate |
-
-\* With GPU acceleration and 8+ CPU cores. Times may be significantly longer on older hardware.
+1. Installed `renalprog` ([Installation Guide](../tutorials/installation.md))
+2. Python 3.9+ and R 4.0+ available
+3. (Optional) CUDA-capable GPU for faster training
 
 ## Getting Help
 
 If you encounter issues while following these tutorials:
 
-1. Check the [Troubleshooting Guide](../reproducibility/troubleshooting.md)
-2. Review the [API Reference](../api/index.md) for function details
-3. Search [GitHub Issues](https://github.com/gprolcastelo/renalprog/issues)
-4. Ask in [GitHub Discussions](https://github.com/gprolcastelo/renalprog/discussions)
+1. Review the [API Reference](../api/index.md) for function details
+2. Search [GitHub Issues](https://github.com/gprolcastelo/renalprog/issues)
+3. Ask in [GitHub Discussions](https://github.com/gprolcastelo/renalprog/discussions)
 
 ## Next Steps
 

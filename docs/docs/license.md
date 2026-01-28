@@ -18,7 +18,7 @@ RenalProg includes or depends on several third-party libraries and tools, each w
 
 ## Contributing
 
-By contributing to RenalProg, you agree that your contributions will be licensed under the Apache License 2.0. See the [Contributing Guidelines](contributing/development.md) for more information.
+By contributing to RenalProg, you agree that your contributions will be licensed under the Apache License 2.0. See the [Contributing Guidelines](contributing/guidelines.md) for more information.
 
 ---
 

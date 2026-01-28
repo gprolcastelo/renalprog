@@ -217,5 +217,3 @@ save_model_config(config, output_dir)
 
 - [Dataset API](dataset.md) - Data loading and preprocessing
 - [Training API](training.md) - Model training with configuration
-- [Reproducibility Guide](../reproducibility/index.md) - Reproducing published results
-

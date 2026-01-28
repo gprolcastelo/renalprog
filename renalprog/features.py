@@ -132,7 +132,12 @@ def preprocess_rnaseq(
 ) -> Tuple[pd.DataFrame, dict]:
     """
     Complete preprocessing pipeline for RNA-seq data.
-    
+
+    Steps (all are optional):
+    1. Filter low expression genes
+    2. Log transform
+    3. Detect and remove outliers using Mahalanobis distance
+
     Args:
         data: DataFrame with genes as rows and samples as columns
         filter_expression: Whether to filter lowly expressed genes

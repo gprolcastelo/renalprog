@@ -56,7 +56,6 @@ docs/
 ├── README.md              # This file
 └── docs/                  # Documentation content
     ├── index.md           # Homepage
-    ├── getting-started.md # Installation guide
     ├── tutorials/         # Step-by-step tutorials
     │   ├── index.md
     │   ├── quickstart.md
@@ -66,13 +65,6 @@ docs/
     │   ├── step4-trajectories.md
     │   ├── step5-classification.md
     │   └── step6-enrichment.md
-    ├── reproducibility/   # Guides for reproducing paper results
-    │   ├── index.md
-    │   ├── requirements.md
-    │   ├── data-preparation.md
-    │   ├── pipeline.md
-    │   ├── results.md
-    │   └── troubleshooting.md
     ├── api/               # API reference documentation
     │   ├── index.md
     │   ├── config.md
@@ -91,7 +83,6 @@ docs/
     │   ├── r-integration.md
     │   ├── custom-models.md
     │   ├── performance.md
-    │   └── gpu.md
     ├── stylesheets/       # Custom CSS
     │   └── extra.css
     └── javascripts/       # Custom JavaScript

@@ -6,18 +6,22 @@ import pytest
 import torch
 import torch.nn as nn
 import numpy as np
-import pandas as pd
-from pathlib import Path
-import tempfile
 import json
 
 from renalprog.config import VAEConfig
 from renalprog.modeling.train import (
-    VAE, AE, CVAE, vae_loss, create_dataloader,
-    train_epoch, evaluate_model, train_vae
+    VAE,
+    AE,
+    CVAE,
+    vae_loss,
+    create_dataloader,
+    train_epoch,
+    train_vae,
 )
 from renalprog.modeling.checkpointing import (
-    ModelCheckpointer, save_model_config, load_model_config
+    ModelCheckpointer,
+    save_model_config,
+    load_model_config,
 )
 from renalprog.utils import set_seed
 
@@ -69,9 +73,9 @@ def test_vae_instantiation(vae_config):
     assert isinstance(model, nn.Module)
 
     # Check model has correct components
-    assert hasattr(model, 'encoder')
-    assert hasattr(model, 'decoder')
-    assert hasattr(model, 'reparametrize')
+    assert hasattr(model, "encoder")
+    assert hasattr(model, "decoder")
+    assert hasattr(model, "reparametrize")
 
     # Check parameters exist
     params = list(model.parameters())
@@ -105,10 +109,18 @@ def test_vae_forward_pass(vae_config, synthetic_vae_data):
     assert z is not None
 
     # Check output shapes
-    assert reconstruction.shape == x.shape, f"Expected {x.shape}, got {reconstruction.shape}"
-    assert mu.shape == (5, vae_config.LATENT_DIM), f"Expected (5, {vae_config.LATENT_DIM}), got {mu.shape}"
-    assert logvar.shape == (5, vae_config.LATENT_DIM), f"Expected (5, {vae_config.LATENT_DIM}), got {logvar.shape}"
-    assert z.shape == (5, vae_config.LATENT_DIM), f"Expected (5, {vae_config.LATENT_DIM}), got {z.shape}"
+    assert reconstruction.shape == x.shape, (
+        f"Expected {x.shape}, got {reconstruction.shape}"
+    )
+    assert mu.shape == (5, vae_config.LATENT_DIM), (
+        f"Expected (5, {vae_config.LATENT_DIM}), got {mu.shape}"
+    )
+    assert logvar.shape == (5, vae_config.LATENT_DIM), (
+        f"Expected (5, {vae_config.LATENT_DIM}), got {logvar.shape}"
+    )
+    assert z.shape == (5, vae_config.LATENT_DIM), (
+        f"Expected (5, {vae_config.LATENT_DIM}), got {z.shape}"
+    )
 
     # Check values are finite
     assert torch.isfinite(reconstruction).all()
@@ -251,23 +263,23 @@ def test_training_one_epoch(vae_config, synthetic_vae_data, tmp_path):
     optimizer = torch.optim.Adam(model.parameters(), lr=vae_config.LEARNING_RATE)
 
     # Train one epoch
-    device = 'cpu'
+    device = "cpu"
     metrics = train_epoch(model, dataloader, optimizer, device, vae_config)
 
     # Check metrics are returned
-    assert 'loss' in metrics
-    assert 'recon_loss' in metrics
-    assert 'kl_loss' in metrics
+    assert "loss" in metrics
+    assert "recon_loss" in metrics
+    assert "kl_loss" in metrics
 
     # Check metrics are reasonable
-    assert metrics['loss'] > 0
-    assert metrics['recon_loss'] > 0
-    assert metrics['kl_loss'] >= 0
+    assert metrics["loss"] > 0
+    assert metrics["recon_loss"] > 0
+    assert metrics["kl_loss"] >= 0
 
     # Check metrics are finite
-    assert np.isfinite(metrics['loss'])
-    assert np.isfinite(metrics['recon_loss'])
-    assert np.isfinite(metrics['kl_loss'])
+    assert np.isfinite(metrics["loss"])
+    assert np.isfinite(metrics["recon_loss"])
+    assert np.isfinite(metrics["kl_loss"])
 
 
 def test_model_save_load(vae_config, tmp_path):
@@ -284,7 +296,7 @@ def test_model_save_load(vae_config, tmp_path):
 
     # Save checkpoint
     checkpointer = ModelCheckpointer(save_dir=tmp_path)
-    metrics = {'train_loss': 1.5, 'val_loss': 1.8}
+    metrics = {"train_loss": 1.5, "val_loss": 1.8}
     checkpointer.save_checkpoint(
         epoch=10,
         model=model,
@@ -295,7 +307,7 @@ def test_model_save_load(vae_config, tmp_path):
     )
 
     # Check checkpoint file exists
-    checkpoint_path = tmp_path / 'best_model.pth'
+    checkpoint_path = tmp_path / "best_model.pth"
     assert checkpoint_path.exists()
 
     # Create new model with same architecture
@@ -311,9 +323,9 @@ def test_model_save_load(vae_config, tmp_path):
     )
 
     # Check checkpoint info
-    assert checkpoint_info['epoch'] == 10
-    assert 'metrics' in checkpoint_info
-    assert checkpoint_info['metrics']['val_loss'] == 1.8
+    assert checkpoint_info["epoch"] == 10
+    assert "metrics" in checkpoint_info
+    assert checkpoint_info["metrics"]["val_loss"] == 1.8
 
     # Check model weights match
     for p1, p2 in zip(model.parameters(), new_model.parameters()):
@@ -355,7 +367,9 @@ def test_overfitting_small_batch(vae_config, synthetic_vae_data):
     # Loss should decrease significantly
     assert final_loss < initial_loss
     assert final_loss < initial_loss * 0.5, "Loss should decrease by at least 50%"
-    print(f"Overfitting test: Initial loss={initial_loss:.4f}, Final loss={final_loss:.4f}")
+    print(
+        f"Overfitting test: Initial loss={initial_loss:.4f}, Final loss={final_loss:.4f}"
+    )
 
 
 def test_vae_reparameterization_trick(vae_config):
@@ -439,8 +453,8 @@ def test_checkpoint_history_saving(vae_config, tmp_path):
     # So we need to mark them as best or final to trigger history saving
     for epoch in range(3):
         metrics = {
-            'train_loss': 2.0 - epoch * 0.5,
-            'val_loss': 2.5 - epoch * 0.4,
+            "train_loss": 2.0 - epoch * 0.5,
+            "val_loss": 2.5 - epoch * 0.4,
         }
         # Mark each as best to trigger history saving
         checkpointer.save_checkpoint(
@@ -448,24 +462,26 @@ def test_checkpoint_history_saving(vae_config, tmp_path):
         )
 
     # Check history file exists
-    history_path = tmp_path / 'training_history.json'
+    history_path = tmp_path / "training_history.json"
     assert history_path.exists()
 
     # Load and verify history
-    with open(history_path, 'r') as f:
+    with open(history_path, "r") as f:
         history = json.load(f)
 
-    assert 'epochs' in history
-    assert 'metrics' in history
+    assert "epochs" in history
+    assert "metrics" in history
     # Each best model save appends to history
-    assert len(history['epochs']) >= 1, f"Expected at least 1 epoch in history, got {len(history['epochs'])}"
-    assert 'train_loss' in history['metrics']
-    assert 'val_loss' in history['metrics']
+    assert len(history["epochs"]) >= 1, (
+        f"Expected at least 1 epoch in history, got {len(history['epochs'])}"
+    )
+    assert "train_loss" in history["metrics"]
+    assert "val_loss" in history["metrics"]
 
 
 def test_config_serialization(vae_config, tmp_path):
     """Test that configuration can be saved and loaded."""
-    config_path = tmp_path / 'config.json'
+    config_path = tmp_path / "config.json"
 
     # Save config
     save_model_config(vae_config, config_path)
@@ -477,10 +493,10 @@ def test_config_serialization(vae_config, tmp_path):
     loaded_config = load_model_config(config_path)
 
     # Check values match
-    assert loaded_config['INPUT_DIM'] == vae_config.INPUT_DIM
-    assert loaded_config['MID_DIM'] == vae_config.MID_DIM
-    assert loaded_config['LATENT_DIM'] == vae_config.LATENT_DIM
-    assert loaded_config['LEARNING_RATE'] == vae_config.LEARNING_RATE
+    assert loaded_config["INPUT_DIM"] == vae_config.INPUT_DIM
+    assert loaded_config["MID_DIM"] == vae_config.MID_DIM
+    assert loaded_config["LATENT_DIM"] == vae_config.LATENT_DIM
+    assert loaded_config["LEARNING_RATE"] == vae_config.LEARNING_RATE
 
 
 @pytest.mark.slow
@@ -500,8 +516,10 @@ def test_full_training_integration(vae_config, synthetic_vae_data, tmp_path):
 
     # Train model - force CPU to avoid CUDA compatibility issues
     model, history = train_vae(
-        X_train, X_test,
-        y_train=None, y_test=None,
+        X_train,
+        X_test,
+        y_train=None,
+        y_test=None,
         config=vae_config,
         save_dir=tmp_path,
         force_cpu=True,  # Force CPU to avoid CUDA errors in tests
@@ -511,18 +529,18 @@ def test_full_training_integration(vae_config, synthetic_vae_data, tmp_path):
     assert model is not None
 
     # Check history
-    assert 'train_loss' in history
-    assert 'val_loss' in history
-    assert len(history['train_loss']) == 3
-    assert len(history['val_loss']) == 3
+    assert "train_loss" in history
+    assert "val_loss" in history
+    assert len(history["train_loss"]) == 3
+    assert len(history["val_loss"]) == 3
 
     # Check loss decreased
-    assert history['train_loss'][-1] < history['train_loss'][0]
+    assert history["train_loss"][-1] < history["train_loss"][0]
 
     # Check checkpoints were saved
-    assert (tmp_path / 'best_model.pth').exists()
-    assert (tmp_path / 'final_model.pth').exists()
-    assert (tmp_path / 'config.json').exists()
+    assert (tmp_path / "best_model.pth").exists()
+    assert (tmp_path / "final_model.pth").exists()
+    assert (tmp_path / "config.json").exists()
 
     print(f"Training complete: Final train_loss={history['train_loss'][-1]:.4f}")
 
@@ -530,4 +548,3 @@ def test_full_training_integration(vae_config, synthetic_vae_data, tmp_path):
 if __name__ == "__main__":
     # Allow running tests directly
     pytest.main([__file__, "-v"])
-

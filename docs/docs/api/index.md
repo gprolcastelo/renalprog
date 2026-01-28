@@ -136,14 +136,6 @@ clf, metrics, shap_values = train_stage_classifier(
 ```python
 from renalprog import plots
 
-# Plot latent space
-plots.plot_latent_space(
-    latent_data,
-    color_by='stage',
-    method='umap',
-    save_path='figures/latent_umap.png'
-)
-
 # Plot training history
 plots.plot_training_history(
     history,
@@ -294,27 +286,11 @@ Visualization functions for all analysis steps.
 
 **Key Functions**:
 
-- `plot_latent_space()`: UMAP/t-SNE visualization
 - `plot_training_history()`: Loss curves
 - `plot_reconstruction()`: Original vs reconstructed
 - `plot_trajectories()`: Trajectory visualization
 - `plot_classification_metrics()`: ROC, confusion matrix
 - `plot_enrichment_heatmap()`: Pathway enrichment
-
-**Example**:
-```python
-from renalprog import plots
-
-# Visualize latent space
-plots.plot_latent_space(
-    latent_data,
-    color_by='stage',
-    method='umap',
-    save_path='figures/latent.png',
-    figsize=(10, 8),
-    title='VAE Latent Space'
-)
-```
 
 See: [Plots Reference](plots.md)
 

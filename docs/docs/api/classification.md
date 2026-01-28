@@ -113,40 +113,17 @@ classifier, metrics = classify_trajectories(
 
 ## Evaluation Metrics
 
-The classification function returns comprehensive metrics:
+The classification function returns macro-metrics:
 
-| Metric | Description |
-|--------|-------------|
-| `accuracy` | Overall classification accuracy |
-| `auc_roc` | Area under ROC curve |
-| `precision` | Positive predictive value |
-| `recall` | Sensitivity/True positive rate |
-| `f1` | Harmonic mean of precision and recall |
-| `confusion_matrix` | 2×2 confusion matrix |
-| `classification_report` | Detailed per-class metrics |
+| Metric        | Description                           |
+|---------------|---------------------------------------|
+| `accuracy`    | Overall classification accuracy       |
+| `auc_roc`     | Area under ROC curve                  |
+| `precision`   | Positive predictive value             |
+| `recall`      | Sensitivity/True positive rate        |
+| `f1`          | Harmonic mean of precision and recall |
+| 'Cohen Kappa' | Cohen's Kappa                         |
 
-## Visualization
-
-### plot_confusion_matrix
-
-Visualize classifier performance:
-
-::: renalprog.plots.plot_confusion_matrix
-
-**Example:**
-
-```python
-from renalprog.plots import plot_confusion_matrix
-from pathlib import Path
-
-# Plot confusion matrix
-plot_confusion_matrix(
-    confusion_matrix=metrics['confusion_matrix'],
-    class_names=['Non-progressing', 'Progressing'],
-    output_path=Path("reports/figures/confusion_matrix.png"),
-    title="Trajectory Classification"
-)
-```
 
 ## Complete Classification Workflow
 
@@ -162,7 +139,6 @@ from renalprog.modeling.predict import (
     generate_trajectories,
     classify_trajectories
 )
-from renalprog.plots import plot_confusion_matrix
 
 # 1. Load model and data
 model = VAE(input_dim=20000, mid_dim=1024, features=128)
@@ -213,14 +189,7 @@ classifier, metrics = classify_trajectories(
     random_state=42
 )
 
-# 6. Visualize results
-plot_confusion_matrix(
-    confusion_matrix=metrics['confusion_matrix'],
-    class_names=['Stable', 'Progressed'],
-    output_path=Path("reports/figures/classification_cm.png")
-)
-
-# 7. Feature importance (for tree-based models)
+# 6. Feature importance (for tree-based models)
 if hasattr(classifier, 'feature_importances_'):
     importances = pd.DataFrame({
         'feature': [f'feature_{i}' for i in range(len(classifier.feature_importances_))],
@@ -230,7 +199,7 @@ if hasattr(classifier, 'feature_importances_'):
     print("Top 10 important features:")
     print(importances.head(10))
 
-# 8. Save results
+# 7. Save results
 results_df = pd.DataFrame({
     'patient_id': clinical.index[early_mask],
     'true_label': labels,
