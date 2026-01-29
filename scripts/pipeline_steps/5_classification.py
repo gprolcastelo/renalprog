@@ -64,7 +64,7 @@ USE_IMPORTANT_GENES = (
 
 # Classification parameters
 n_seeds = 10
-n_trials = 10
+n_trials = 100
 n_boosting_rounds = 100
 num_threads = max(1, os.cpu_count() - 1)
 
