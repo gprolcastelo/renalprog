@@ -29,7 +29,7 @@ Let's run a minimal example that demonstrates the complete pipeline:
 
 ```python
 from renalprog import config, dataset, features, modeling, plots
-from renalprog.modeling import VAE, generate_trajectories
+from renalprog.modeling import VAE, generate_trajectory_data
 import pandas as pd
 import numpy as np
 import torch
@@ -155,8 +155,8 @@ vae_model, network, vae_history, reconstruction_history = train_vae_with_postpro
     X_test=X_test,
     vae_config=vae_config,
     reconstruction_network_dims=recnet_dims,
-    reconstruction_epochs=1_000,
-    reconstruction_lr=1e-4,
+    reconstruction_epochs=10,
+    reconstruction_lr=1e-2,
     batch_size_reconstruction=8,
     save_dir=model_dir,
     force_cpu=True,  # Set to False to use GPU if available
@@ -247,7 +247,7 @@ You can find the complete code for this quick start example in the `scripts/quic
 Easily run it from the command line:
 
 ```bash
-python scripts/quickstart_vae.py
+python scripts/quickstart.py
 ``` 
 
 

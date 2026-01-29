@@ -107,14 +107,26 @@ vae.save('models/my_vae.pt')
 ### Generate Trajectories
 
 ```python
-from renalprog.modeling import generate_trajectories
+from renalprog.modeling import generate_trajectory_data
+from sklearn.preprocessing import MinMaxScaler
 
-trajectories = generate_trajectories(
-    vae=vae,
-    start_samples=early_stage_samples,
-    end_samples=late_stage_samples,
-    n_trajectories=100,
-    n_timepoints=20
+# Prepare trajectory (list of patient IDs in progression order)
+trajectory = ['TCGA-A1-001', 'TCGA-A2-002', 'TCGA-A3-003']
+
+# Use the same scaler that was used during VAE training
+scaler = MinMaxScaler()
+scaler.fit(X_train.T)  # Fit on training data (genes as features)
+
+# Generate interpolated gene expression along trajectory
+trajectory_data = generate_trajectory_data(
+    vae_model=vae,
+    recnet_model=reconstruction_network,  # Optional, can be None
+    trajectory=trajectory,
+    gene_data=gene_expression_df,  # DataFrame with genes as rows, patients as columns
+    n_timepoints=50,
+    interpolation_method='linear',  # or 'spherical'
+    device='cpu',
+    scaler=scaler
 )
 ```
 
@@ -253,7 +265,7 @@ Machine learning models and training.
 
 **Example**:
 ```python
-from renalprog.modeling import VAE, train_vae, generate_trajectories
+from renalprog.modeling import VAE, train_vae, generate_trajectory_data
 
 # Train VAE
 vae, history = train_vae(
@@ -262,12 +274,13 @@ vae, history = train_vae(
     config=vae_config
 )
 
-# Generate trajectories
-trajectories = generate_trajectories(
-    vae=vae,
-    start_samples=early_samples,
-    end_samples=late_samples,
-    n_trajectories=100
+# Generate trajectory data
+trajectory_data = generate_trajectory_data(
+    vae_model=vae,
+    recnet_model=None,  # Optional reconstruction network
+    trajectory=['patient1', 'patient2', 'patient3'],
+    gene_data=gene_expression_df,
+    n_timepoints=50
 )
 ```
 
@@ -289,7 +302,8 @@ Visualization functions for all analysis steps.
 - `plot_training_history()`: Loss curves
 - `plot_reconstruction()`: Original vs reconstructed
 - `plot_trajectories()`: Trajectory visualization
-- `plot_classification_metrics()`: ROC, confusion matrix
+- `plot_metrics()`: Classification metrics boxplots
+- `plot_trajectory_classification()`: Trajectory classification over time
 - `plot_enrichment_heatmap()`: Pathway enrichment
 
 See: [Plots Reference](plots.md)
@@ -387,21 +401,29 @@ def custom_preprocess(data, **kwargs):
 ### Batch Processing
 
 ```python
-from renalprog.modeling import generate_trajectories
+from renalprog.modeling import generate_trajectory_data
+from sklearn.preprocessing import MinMaxScaler
 import glob
 
 # Process multiple experiments
 for experiment_dir in glob.glob('data/interim/experiment_*'):
     vae = VAE.load(f'{experiment_dir}/vae_model.pt')
+    recnet = NetworkReconstruction.load(f'{experiment_dir}/recnet_model.pt')
     
-    trajectories = generate_trajectories(
-        vae=vae,
-        start_samples=early,
-        end_samples=late,
-        n_trajectories=100
+    # Load the scaler used during training
+    scaler = MinMaxScaler()
+    scaler.fit(X_train.T)
+    
+    trajectory_data = generate_trajectory_data(
+        vae_model=vae,
+        recnet_model=recnet,
+        trajectory=['early_patient', 'mid_patient', 'late_patient'],
+        gene_data=gene_df,
+        n_timepoints=50,
+        scaler=scaler
     )
     
-    trajectories.to_csv(f'{experiment_dir}/trajectories.csv')
+    trajectory_data.to_csv(f'{experiment_dir}/trajectory_data.csv')
 ```
 
 ## Type Hints

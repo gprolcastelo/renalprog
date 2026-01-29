@@ -70,22 +70,6 @@ test-coverage:
 test-quick:
 	pytest tests/ -v -m "not slow"
 
-## Lint code with flake8
-lint:
-	flake8 renalprog/ tests/
-
-## Format code with black
-format:
-	black renalprog/ tests/ --line-length 100
-
-## Sort imports with isort
-isort:
-	isort renalprog/ tests/ --profile black
-
-## Run all code quality checks
-quality: format isort lint
-	@echo ">>> Code quality checks complete."
-
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
@@ -113,43 +97,7 @@ docs:
 	cd docs && make html
 	@echo ">>> Documentation built in docs/_build/html/"
 
-## Run preprocessing step
-preprocess:
-	$(PYTHON_INTERPRETER) scripts/pipeline_steps/01_preprocess.py
 
-## Run train/test split
-split:
-	$(PYTHON_INTERPRETER) scripts/pipeline_steps/02_train_test_split.py
-
-## Train VAE model
-train-vae:
-	$(PYTHON_INTERPRETER) scripts/pipeline_steps/03_train_vae.py
-
-## Generate trajectories
-generate-trajectories:
-	$(PYTHON_INTERPRETER) scripts/pipeline_steps/06_generate_trajectories.py
-
-## Run classification
-classify:
-	$(PYTHON_INTERPRETER) scripts/pipeline_steps/07_classification.py
-
-## Run gene enrichment analysis (R)
-enrichment:
-	Rscript scripts/r_analysis/gene_enrichment.R
-
-## Run full pipeline
-pipeline:
-	@echo ">>> Running full pipeline..."
-	$(MAKE) preprocess
-	$(MAKE) split
-	$(MAKE) train-vae
-	$(MAKE) generate-trajectories
-	$(MAKE) classify
-	@echo ">>> Pipeline complete!"
-
-## Run full pipeline with enrichment analysis
-pipeline-full: pipeline enrichment
-	@echo ">>> Full pipeline with enrichment analysis complete!"
 
 ## Check Python environment
 check-env:
@@ -200,9 +148,9 @@ Testing & Quality:
   make test             Run all tests
   make test-coverage    Run tests with coverage report
   make test-quick       Run quick tests only
-  make lint             Lint code with flake8
-  make format           Format code with black
-  make isort            Sort imports
+  make lint             Lint code with ruff
+  make format           Format code with ruff
+  make fix              Fix linting issues automatically
   make quality          Run all code quality checks
 
 Cleaning:

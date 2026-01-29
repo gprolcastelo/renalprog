@@ -580,3 +580,224 @@ def plot_umap_plotly(
             fig.write_image(f"{save_as}.{extension}", scale=2)
     if show:
         fig.show()
+
+
+def plot_metrics(
+    results_df: pd.DataFrame,
+    save_path: Union[str, Path],
+    title: str = "Classification Metrics",
+    formats: List[str] = ["html", "png", "pdf", "svg"],
+) -> go.Figure:
+    """
+    Create boxplot of classification metrics.
+
+    Creates a boxplot visualization showing the distribution of various
+    classification metrics (e.g., Accuracy, Precision, Recall, F1-Score,
+    Cohen's Kappa) across multiple model runs.
+
+    Args:
+        results_df: DataFrame with classification metrics as columns.
+                   Each row represents metrics from one model run.
+        save_path: Path to save the figure (without extension)
+        title: Plot title (default: "Classification Metrics")
+        formats: List of formats to save ['html', 'png', 'pdf', 'svg']
+
+    Returns:
+        Plotly Figure object
+
+    Example:
+        >>> results_df = pd.DataFrame({
+        ...     'Accuracy': [0.85, 0.87, 0.86],
+        ...     'Precision': [0.83, 0.85, 0.84],
+        ...     'Recall': [0.82, 0.84, 0.83],
+        ...     'F1-Score': [0.825, 0.845, 0.835],
+        ...     "Cohen's Kappa": [0.70, 0.74, 0.72]
+        ... })
+        >>> fig = plot_metrics(results_df, "figures/metrics_boxplot")
+
+    Note:
+        Requires the kaleido package for saving static images (PNG, PDF, SVG).
+        Install with: pip install kaleido
+    """
+    logger.info("Creating metrics visualization...")
+
+    # Melt dataframe for plotting
+    df_melted = results_df.melt(var_name="Metric", value_name="Score")
+
+    # Create boxplot
+    fig = px.box(
+        df_melted,
+        x="Metric",
+        y="Score",
+        color="Metric",
+        notched=False,
+        color_discrete_sequence=px.colors.qualitative.Safe,
+    )
+
+    # Layout customization
+    fig.update_layout(
+        width=600,
+        height=450,
+        title=title,
+        font=dict(family="Arial, sans-serif", size=12),
+        xaxis=dict(
+            title="Metric",
+            tickfont=dict(size=13),
+            linecolor="black",
+            showgrid=False,
+        ),
+        yaxis=dict(
+            title="Score",
+            tickfont=dict(size=13),
+            range=[0, 1.05],
+            linecolor="black",
+            gridcolor="lightgrey",
+            gridwidth=0.5,
+        ),
+        showlegend=False,
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
+
+    fig.update_traces(
+        width=0.6,
+        marker=dict(size=4, opacity=0.5),
+    )
+
+    # Save figure in multiple formats
+    save_plot(fig, save_path, formats=formats, width=600, height=450)
+
+    logger.info(f"Metrics plots saved to: {save_path}")
+
+    return fig
+
+
+def plot_trajectory_classification(
+    df_predictions: pd.DataFrame,
+    save_path: Union[str, Path],
+    traj_type: str = "trajectory",
+    n_timepoints: Optional[int] = None,
+    title: Optional[str] = None,
+    formats: List[str] = ["html", "png", "pdf", "svg"],
+) -> go.Figure:
+    """
+    Create visualization of trajectory classification results.
+
+    Shows how classification probabilities change over time along synthetic
+    trajectories. Displays boxplots for each time point with median values
+    highlighted, colored by stage (early/late).
+
+    Args:
+        df_predictions: Trajectory predictions dataframe with columns:
+                       - 'Interpol_Index': Time point index
+                       - 'Probability': Predicted probability
+                       - 'Stage': Stage label ('early' or 'late')
+        save_path: Path to save the figure (without extension)
+        traj_type: Type of trajectories (e.g., 'train_to_train', 'test_to_test')
+        n_timepoints: Number of interpolation time points. If None, inferred from data.
+        title: Plot title. If None, auto-generated from traj_type.
+        formats: List of formats to save ['html', 'png', 'pdf', 'svg']
+
+    Returns:
+        Plotly Figure object
+
+    Example:
+        >>> df_predictions = pd.DataFrame({
+        ...     'Interpol_Index': [0, 0, 1, 1, 2, 2],
+        ...     'Probability': [0.9, 0.1, 0.7, 0.3, 0.5, 0.5],
+        ...     'Stage': ['early', 'late', 'early', 'late', 'early', 'late']
+        ... })
+        >>> fig = plot_trajectory_classification(
+        ...     df_predictions,
+        ...     "figures/trajectory_classification",
+        ...     traj_type="test_to_test"
+        ... )
+
+    Note:
+        - Expected dataframe structure matches output from trajectory classification
+        - Requires the kaleido package for saving static images
+        - Medians are shown as diamond markers
+    """
+    logger.info(f"Creating {traj_type} trajectory classification visualization...")
+
+    # Infer n_timepoints if not provided
+    if n_timepoints is None:
+        n_timepoints = df_predictions["Interpol_Index"].max() + 1
+
+    # Generate title if not provided
+    if title is None:
+        title = f"Trajectory Classification: {traj_type.replace('_', ' ').title()}"
+
+    # Create boxplot
+    fig = px.box(
+        df_predictions,
+        x="Interpol_Index",
+        y="Probability",
+        color="Stage",
+        points=False,
+        color_discrete_sequence=["rgba(55, 126, 184, 0.85)", "rgba(228, 26, 28, 0.85)"],
+        template="ggplot2",
+    )
+
+    # Calculate and add medians
+    medians = (
+        df_predictions.groupby(["Interpol_Index", "Stage"])["Probability"]
+        .median()
+        .reset_index()
+    )
+    stage_colors = {"early": "rgba(55, 126, 184, 1)", "late": "rgba(228, 26, 28, 1)"}
+
+    for stage in medians["Stage"].unique():
+        stage_medians = medians[medians["Stage"] == stage]
+        delta = -0.2 if stage == "early" else 0.2
+        fig.add_trace(
+            go.Scatter(
+                x=stage_medians["Interpol_Index"] + delta,
+                y=stage_medians["Probability"],
+                mode="markers",
+                marker=dict(
+                    size=10,
+                    color=stage_colors[stage],
+                    symbol="diamond",
+                    line=dict(color="black", width=1.5),
+                ),
+                name=f"{stage} (Median)",
+                showlegend=False,
+            )
+        )
+
+    # Layout customization
+    fig.update_layout(
+        width=1600,
+        height=600,
+        title=title,
+        font=dict(family="Times New Roman", size=24),
+        legend=dict(
+            title="Stage", font=dict(size=22), bordercolor="black", borderwidth=1
+        ),
+        xaxis=dict(
+            title=dict(text="Interpolation Index", font=dict(size=26)),
+            tickfont=dict(size=20),
+            showgrid=False,
+            linecolor="black",
+            mirror=True,
+            tickvals=list(range(0, n_timepoints)),
+            range=[-0.5, n_timepoints - 0.5],
+        ),
+        yaxis=dict(
+            title=dict(text="Probability", font=dict(size=26)),
+            tickfont=dict(size=20),
+            showgrid=False,
+            linecolor="black",
+            mirror=True,
+        ),
+        margin=dict(l=80, r=40, t=60, b=80),
+    )
+
+    # Save figure in multiple formats
+    save_plot(fig, save_path, formats=formats, width=1600, height=600)
+
+    logger.info(f"Saved {traj_type} classification plots to: {save_path}")
+
+    return fig
+

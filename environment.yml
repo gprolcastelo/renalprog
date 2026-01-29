@@ -42,7 +42,5 @@ dependencies:
     - python-slugify
     - pytest
     - pytest-cov
-    - black
-    - flake8
-    - isort
+    - ruff
 

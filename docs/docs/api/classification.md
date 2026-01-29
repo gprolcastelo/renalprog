@@ -136,7 +136,7 @@ from sklearn.preprocessing import StandardScaler
 from renalprog.modeling.train import VAE
 from renalprog.modeling.predict import (
     apply_vae,
-    generate_trajectories,
+    generate_trajectory_data,
     classify_trajectories
 )
 
@@ -151,7 +151,7 @@ clinical = pd.read_csv("data/interim/split/test_clinical.tsv", sep="\t", index_c
 early_mask = clinical['stage'] == 'early'
 late_mask = clinical['stage'] == 'late'
 
-trajectories = generate_trajectories(
+trajectories = generate_trajectory_data(
     model=model,
     start_data=expr.values[early_mask],
     end_data=expr.values[late_mask],

@@ -12,7 +12,7 @@ Pipeline steps:
 4. Apply model to synthetic trajectories (train-to-train and test-to-test)
 5. Visualize trajectory classifications
 
-Author: Renalprog Team
+Author: renalprog Team
 Date: 2025-12-16
 """
 
@@ -28,10 +28,9 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from tqdm import tqdm
-import plotly.express as px
-import plotly.graph_objects as go
 from renalprog.config import DATA_DIR, MODELS_DIR, REPORTS_DIR
 from renalprog.modeling.train import classification_benchmark
+from renalprog.plots import plot_metrics, plot_trajectory_classification
 from renalprog.utils import set_seed
 
 # Add project root to path
@@ -254,67 +253,6 @@ def train_multiple_classifiers(X_data, y_data, n_seeds, output_dir):
 
     return models, results_df, seeds
 
-
-def plot_metrics(results_df, figures_dir):
-    """
-    Create boxplot of classification metrics.
-
-    Args:
-        results_df: DataFrame with classification metrics
-        figures_dir: Directory to save figures
-    """
-    logger.info("Creating metrics visualization...")
-
-    # Melt dataframe for plotting
-    df_melted = results_df.melt(var_name="Metric", value_name="Score")
-
-    # Create boxplot
-    fig = px.box(
-        df_melted,
-        x="Metric",
-        y="Score",
-        color="Metric",
-        notched=False,
-        color_discrete_sequence=px.colors.qualitative.Safe,
-    )
-
-    # Layout customization
-    fig.update_layout(
-        width=600,
-        height=450,
-        font=dict(family="Arial, sans-serif", size=12),
-        xaxis=dict(
-            title="Score",
-            tickfont=dict(size=13),
-            linecolor="black",
-            showgrid=False,
-        ),
-        yaxis=dict(
-            title=None,
-            tickfont=dict(size=13),
-            range=[0, 1.05],
-            linecolor="black",
-            gridcolor="lightgrey",
-            gridwidth=0.5,
-        ),
-        showlegend=False,
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-    )
-
-    fig.update_traces(
-        width=0.6,
-        marker=dict(size=4, opacity=0.5),
-    )
-
-    # Save figure
-    figures_dir.mkdir(parents=True, exist_ok=True)
-    fig.write_html(figures_dir / "boxplot_metrics.html")
-    fig.write_image(figures_dir / "boxplot_metrics.png", scale=2)
-    fig.write_image(figures_dir / "boxplot_metrics.pdf")
-    fig.write_image(figures_dir / "boxplot_metrics.svg")
-
-    logger.info(f"Metrics plots saved to: {figures_dir}")
 
 
 def save_best_model(models, results_df, seeds, model_dir):
@@ -540,90 +478,6 @@ def classify_trajectories(traj_gene, model, selected_genes):
     return df_predictions
 
 
-def plot_trajectory_classification(df_predictions, save_dir, traj_type):
-    """
-    Create visualization of trajectory classification results.
-
-    Args:
-        df_predictions: Trajectory predictions dataframe
-        save_dir: Directory to save figure
-        traj_type: Type of trajectories (train_to_train or test_to_test)
-    """
-
-    # Create boxplot
-    fig = px.box(
-        df_predictions,
-        x="Interpol_Index",
-        y="Probability",
-        color="Stage",
-        points=False,
-        color_discrete_sequence=["rgba(55, 126, 184, 0.85)", "rgba(228, 26, 28, 0.85)"],
-        template="ggplot2",
-    )
-
-    # Calculate and add medians
-    medians = (
-        df_predictions.groupby(["Interpol_Index", "Stage"])["Probability"]
-        .median()
-        .reset_index()
-    )
-    stage_colors = {"early": "rgba(55, 126, 184, 1)", "late": "rgba(228, 26, 28, 1)"}
-
-    for stage in medians["Stage"].unique():
-        stage_medians = medians[medians["Stage"] == stage]
-        delta = -0.2 if stage == "early" else 0.2
-        fig.add_trace(
-            go.Scatter(
-                x=stage_medians["Interpol_Index"] + delta,
-                y=stage_medians["Probability"],
-                mode="markers",
-                marker=dict(
-                    size=10,
-                    color=stage_colors[stage],
-                    symbol="diamond",
-                    line=dict(color="black", width=1.5),
-                ),
-                name=f"{stage} (Median)",
-                showlegend=False,
-            )
-        )
-
-    # Layout customization
-    fig.update_layout(
-        width=1600,
-        height=600,
-        font=dict(family="Times New Roman", size=24),
-        legend=dict(
-            title="Stage", font=dict(size=22), bordercolor="black", borderwidth=1
-        ),
-        xaxis=dict(
-            title=dict(text="Interpolation Index", font=dict(size=26)),
-            tickfont=dict(size=20),
-            showgrid=False,
-            linecolor="black",
-            mirror=True,
-            tickvals=list(range(0, n_timepoints)),
-            range=[-0.5, n_timepoints - 0.5],
-        ),
-        yaxis=dict(
-            title=dict(text="Probability", font=dict(size=26)),
-            tickfont=dict(size=20),
-            showgrid=False,
-            linecolor="black",
-            mirror=True,
-        ),
-        margin=dict(l=80, r=40, t=20, b=80),
-        title=None,
-    )
-
-    # Save figure
-    save_dir.mkdir(parents=True, exist_ok=True)
-    fig.write_html(save_dir / f"{traj_type}_classification.html")
-    fig.write_image(save_dir / f"{traj_type}_classification.png")
-    fig.write_image(save_dir / f"{traj_type}_classification.pdf", scale=2)
-    fig.write_image(save_dir / f"{traj_type}_classification.svg")
-
-    logger.info(f"Saved {traj_type} classification plots")
 
 
 # ============================================================================
@@ -691,7 +545,7 @@ if __name__ == "__main__":
     logger.info("STEP 3: Visualizing metrics")
     logger.info("-" * 80)
 
-    plot_metrics(results_df, figures_dir)
+    plot_metrics(results_df, figures_dir / "boxplot_metrics")
 
     # ========================================================================
     # STEP 4: Save Best Model
@@ -738,7 +592,10 @@ if __name__ == "__main__":
 
         # Plot
         plot_trajectory_classification(
-            predictions_train, figures_dir / "trajectories", "train_to_train"
+            predictions_train,
+            figures_dir / "trajectories" / "train_to_train_classification",
+            traj_type="train_to_train",
+            n_timepoints=n_timepoints,
         )
     else:
         logger.warning("Train trajectory directory not found")
@@ -759,7 +616,10 @@ if __name__ == "__main__":
 
         # Plot
         plot_trajectory_classification(
-            predictions_test, figures_dir / "trajectories", "test_to_test"
+            predictions_test,
+            figures_dir / "trajectories" / "test_to_test_classification",
+            traj_type="test_to_test",
+            n_timepoints=n_timepoints,
         )
     else:
         logger.warning(f"Test trajectory directory not found: {test_traj_dir}")

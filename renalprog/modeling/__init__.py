@@ -15,10 +15,10 @@ def __getattr__(name):
         from renalprog.modeling.train import NetworkReconstruction
 
         return NetworkReconstruction
-    elif name == "generate_trajectories":
-        from renalprog.modeling.predict import generate_trajectories
+    elif name == "generate_trajectory_data":
+        from renalprog.modeling.predict import generate_trajectory_data
 
-        return generate_trajectories
+        return generate_trajectory_data
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -26,5 +26,5 @@ __all__ = [
     "train_vae",
     "VAE",
     "NetworkReconstruction",
-    "generate_trajectories",
+    "generate_trajectory_data",
 ]

@@ -150,8 +150,9 @@ plot_pca_variance(
 import torch
 import pandas as pd
 from pathlib import Path
-from renalprog.modeling.train import VAE, train_vae
-from renalprog.modeling.predict import apply_vae, generate_trajectories
+from sklearn.preprocessing import MinMaxScaler
+from renalprog.modeling.train import VAE, NetworkReconstruction, train_vae
+from renalprog.modeling.predict import apply_vae, generate_trajectory_data
 from renalprog.plots import (
     plot_training_history,
     plot_trajectory,
@@ -194,21 +195,30 @@ plot_umap_plotly(
 ).write_html(output_dir / "latent_space_interactive.html")
 
 
-# 4. Generate and plot trajectories
-early_mask = clinical['stage'] == 'early'
-late_mask = clinical['stage'] == 'late'
+# 4. Generate and plot trajectory
+# Prepare scaler
+scaler = MinMaxScaler()
+scaler.fit(train_expr.values.T)
 
-trajectories = generate_trajectories(
-    model=model,
-    start_data=test_expr.values[early_mask],
-    end_data=test_expr.values[late_mask],
-    n_steps=50,
-    device='cuda'
+# Define trajectory (patient IDs in progression order)
+trajectory_patients = ['TCGA-A1-001', 'TCGA-A2-002', 'TCGA-A3-003']
+
+trajectory_data = generate_trajectory_data(
+    vae_model=model,
+    recnet_model=None,  # Optional reconstruction network
+    trajectory=trajectory_patients,
+    gene_data=test_expr.T,  # Transpose: genes as rows, patients as columns
+    n_timepoints=50,
+    device='cuda',
+    scaler=scaler
 )
 
-# Plot first trajectory
+# Get top variable genes for visualization
+top_genes = trajectory_data.var(axis=0).nlargest(20).index
+
+# Plot trajectory
 plot_trajectory(
-    trajectory=trajectories[0],
+    trajectory=trajectory_data[top_genes],
     feature_names=top_genes.tolist(),
     output_path=output_dir / "trajectory_001.png",
     title="Disease Progression Trajectory"
@@ -217,10 +227,107 @@ plot_trajectory(
 print(f"All figures saved to {output_dir}")
 ```
 
+## Classification Visualization
+
+### plot_metrics
+
+Visualize classification metrics across multiple model runs.
+
+::: renalprog.plots.plot_metrics
+
+**Example Usage:**
+
+```python
+from renalprog.plots import plot_metrics
+import pandas as pd
+
+# Classification results from multiple runs
+results_df = pd.DataFrame({
+    'Accuracy': [0.85, 0.87, 0.86, 0.88, 0.84],
+    'Precision': [0.83, 0.85, 0.84, 0.86, 0.82],
+    'Recall': [0.82, 0.84, 0.83, 0.85, 0.81],
+    'F1-Score': [0.825, 0.845, 0.835, 0.855, 0.815],
+    "Cohen's Kappa": [0.70, 0.74, 0.72, 0.76, 0.68]
+})
+
+# Create boxplot visualization
+fig = plot_metrics(
+    results_df,
+    save_path="reports/figures/classification_metrics",
+    title="XGBoost Classification Metrics"
+)
+```
+
+### plot_trajectory_classification
+
+Visualize classification probabilities along synthetic trajectories.
+
+::: renalprog.plots.plot_trajectory_classification
+
+**Example Usage:**
+
+```python
+from renalprog.plots import plot_trajectory_classification
+import pandas as pd
+
+# Load trajectory classification predictions
+df_predictions = pd.read_csv("data/processed/trajectory_classifications.csv")
+
+# Visualize how probabilities change over time
+fig = plot_trajectory_classification(
+    df_predictions,
+    save_path="reports/figures/trajectory_classification",
+    traj_type="test_to_test",
+    n_timepoints=50,
+    title="Disease Progression Classification"
+)
+```
+
+**Complete Classification Workflow:**
+
+```python
+from renalprog.plots import plot_metrics, plot_trajectory_classification
+from renalprog.modeling.train import classification_benchmark
+from pathlib import Path
+
+# Train multiple classifiers
+results = []
+models = []
+for seed in range(10):
+    metrics, model = classification_benchmark(
+        X_train, y_train, X_test, y_test,
+        seed=seed
+    )
+    results.append(metrics)
+    models.append(model)
+
+# Visualize metrics
+results_df = pd.DataFrame(results)
+plot_metrics(
+    results_df,
+    save_path="reports/figures/classification_metrics"
+)
+
+# Apply best model to trajectories
+best_idx = results_df["Cohen's Kappa"].idxmax()
+best_model = models[best_idx]
+
+predictions = classify_trajectories(best_model, trajectory_data)
+
+# Visualize trajectory classifications
+plot_trajectory_classification(
+    predictions,
+    save_path="reports/figures/trajectory_classification",
+    traj_type="train_to_train",
+    n_timepoints=50
+)
+```
+
 ## See Also
 
 - [Training API](training.md) - Generate training history
 - [Prediction API](prediction.md) - Generate predictions to plot
 - [Trajectories API](trajectories.md) - Generate trajectories
+- [Step 5: Classification Tutorial](../tutorials/step5-classification.md) - Full classification workflow
 - [Complete Pipeline Tutorial](../tutorials/complete-pipeline.md)
 

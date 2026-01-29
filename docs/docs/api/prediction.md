@@ -189,49 +189,58 @@ Extract metadata from model directory.
 import torch
 import pandas as pd
 from pathlib import Path
-from renalprog.modeling.train import VAE
+from sklearn.preprocessing import MinMaxScaler
+from renalprog.modeling.train import VAE, NetworkReconstruction
 from renalprog.modeling.predict import (
     apply_vae,
-    generate_trajectories,
+    generate_trajectory_data,
     evaluate_reconstruction
 )
-from renalprog.plots import  plot_trajectory
+from renalprog.plots import plot_trajectory
 
 # Load model and data
-model = VAE(input_dim=20000, mid_dim=1024, features=128)
-model.load_state_dict(torch.load("models/my_vae/best_model.pt"))
+vae_model = VAE(input_dim=20000, mid_dim=1024, features=128)
+vae_model.load_state_dict(torch.load("models/my_vae/best_model.pt"))
+
+recnet_model = NetworkReconstruction([20000, 5000, 20000])
+recnet_model.load_state_dict(torch.load("models/my_vae/recnet_model.pt"))
 
 train_expr = pd.read_csv("data/interim/split/train_expression.tsv", sep="\t", index_col=0)
 test_expr = pd.read_csv("data/interim/split/test_expression.tsv", sep="\t", index_col=0)
 clinical = pd.read_csv("data/interim/split/test_clinical.tsv", sep="\t", index_col=0)
 
 # Encode data
-train_results = apply_vae(model, train_expr.values, device='cuda')
-test_results = apply_vae(model, test_expr.values, device='cuda')
+train_results = apply_vae(vae_model, train_expr.values, device='cuda')
+test_results = apply_vae(vae_model, test_expr.values, device='cuda')
 
-# Create patient connections
-early_mask = clinical['stage'] == 'early'
-late_mask = clinical['stage'] == 'late'
+# Prepare scaler (use same as training)
+scaler = MinMaxScaler()
+scaler.fit(train_expr.values.T)  # Fit on training data
 
-# Generate trajectories
-trajectories = generate_trajectories(
-    model=model,
-    start_data=test_expr.values[early_mask],
-    end_data=test_expr.values[late_mask],
-    n_steps=50,
-    interpolation='spherical',
-    device='cuda'
+# Define a trajectory (list of patient IDs)
+trajectory_patients = ['TCGA-A1-001', 'TCGA-A2-002', 'TCGA-A3-003']
+
+# Generate trajectory data
+trajectory_data = generate_trajectory_data(
+    vae_model=vae_model,
+    recnet_model=recnet_model,
+    trajectory=trajectory_patients,
+    gene_data=test_expr.T,  # Transpose: genes as rows, patients as columns
+    n_timepoints=50,
+    interpolation_method='spherical',
+    device='cuda',
+    scaler=scaler
 )
 
 # Evaluate reconstruction
 metrics = evaluate_reconstruction(
-    model=model,
+    model=vae_model,
     original_data=test_expr.values,
     device='cuda',
     output_dir=Path("reports/reconstruction")
 )
 
-print(f"Generated {len(trajectories)} trajectories")
+print(f"Generated trajectory with {len(trajectory_data)} time points")
 print(f"Reconstruction MSE: {metrics['mse']:.4f}")
 ```
 

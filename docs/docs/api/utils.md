@@ -130,12 +130,13 @@ import logging
 from pathlib import Path
 import pandas as pd
 import torch
+from sklearn.preprocessing import MinMaxScaler
 
 from renalprog.utils import set_seed, configure_logging, get_device
 from renalprog.dataset import download_data, process_downloaded_data, create_train_test_split
 from renalprog.features import preprocess_rnaseq
 from renalprog.modeling.train import train_vae
-from renalprog.modeling.predict import apply_vae, generate_trajectories
+from renalprog.modeling.predict import apply_vae, generate_trajectory_data
 from renalprog.plots import plot_training_history
 
 # ============================================================================
