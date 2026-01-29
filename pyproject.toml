@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "renalprog"
-version = "0.1.0"
+version = "0.0.2"
 description = "A Python package for simulating kidney cancer progression with synthetic data generation and machine learning."
 readme = "README.md"
 authors = [
-    {name = "Guillermo Prol Castelo", email = "guillermo.prol@bsc.es"}
+    {name = "Guillermo Prol-Castelo", email = "guillermo.prol@bsc.es"}
 ]
 license = {text = "Apache-2.0"}
 classifiers = [
@@ -73,10 +73,10 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/renalprog"
-Documentation = "https://renalprog.readthedocs.io"
-Repository = "https://github.com/yourusername/renalprog"
-Issues = "https://github.com/yourusername/renalprog/issues"
+Homepage = "https://github.com/gprolcastelo/renalprog"
+Documentation = "https://gprolcastelo.github.io/renalprog/"
+Repository = "https://github.com/gprolcastelo/renalprog"
+Issues = "https://github.com/gprolcastelo/renalprog/issues"
 
 [project.scripts]
 renalprog-preprocess = "renalprog.cli:preprocess"
@@ -118,8 +118,6 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v"
-# Note: To enable coverage reporting, install pytest-cov and add these options:
-# --cov=renalprog --cov-report=html --cov-report=term
 
 [tool.mypy]
 python_version = "3.9"

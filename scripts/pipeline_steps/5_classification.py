@@ -54,6 +54,7 @@ EXTERNAL_DATA_DIR = DATA_DIR / "external"
 
 # Parameters
 cancer_type = "KIRC"
+stage_col_name = "stage"
 today = datetime.now().strftime("%Y%m%d")
 
 # Gene selection
@@ -63,7 +64,7 @@ USE_IMPORTANT_GENES = (
 
 # Classification parameters
 n_seeds = 10
-n_trials = 100
+n_trials = 10
 n_boosting_rounds = 100
 num_threads = max(1, os.cpu_count() - 1)
 
@@ -81,6 +82,7 @@ def load_classification_data(
     train_test_split_dir,
     important_genes_path=None,
     use_important_genes=False,
+    stage_col_name="ajcc_pathologic_tumor_stage",
 ):
     """
     Load data for classification.
@@ -97,8 +99,8 @@ def load_classification_data(
     logger.info("Loading classification data...")
 
     # Load preprocessed data
-    data_path = preprocessed_dir / "rnaseq_maha.csv"
-    metadata_path = INTERIM_DATA_DIR / "KIRC_data" / "KIRC_clinical.csv"
+    data_path = preprocessed_dir / "preprocessed_rnaseq.csv"
+    metadata_path = preprocessed_dir / "clinical_data.csv"
 
     data = pd.read_csv(data_path, index_col=0).T  # Transpose to samples × genes
     metadata = pd.read_csv(metadata_path, index_col=0)
@@ -107,11 +109,11 @@ def load_classification_data(
     logger.info(f"Metadata shape: {metadata.shape}")
 
     # Load train/test split
-    X_train = pd.read_csv(train_test_split_dir / "X_train.csv", index_col=0)
-    X_test = pd.read_csv(train_test_split_dir / "X_test.csv", index_col=0)
+    y_train = pd.read_csv(train_test_split_dir / "y_train.csv", index_col=0)
+    y_test = pd.read_csv(train_test_split_dir / "y_test.csv", index_col=0)
 
-    train_patients = X_train.index
-    test_patients = X_test.index
+    train_patients = y_train.index
+    test_patients = y_test.index
 
     logger.info(f"Train patients: {len(train_patients)}")
     logger.info(f"Test patients: {len(test_patients)}")
@@ -138,7 +140,7 @@ def load_classification_data(
 
     # Prepare data for classification (train set only)
     X_data = data.loc[train_patients, selected_genes]
-    y_data = metadata.loc[train_patients, "ajcc_pathologic_tumor_stage"]
+    y_data = metadata.loc[train_patients, stage_col_name]
 
     logger.info(f"Classification data shape: X={X_data.shape}, y={y_data.shape}")
 
@@ -643,8 +645,8 @@ if __name__ == "__main__":
     logger.info("STEP 1: Loading data")
     logger.info("-" * 80)
 
-    preprocessed_dir = INTERIM_DATA_DIR / "20240930_preprocessed_KIRC"
-    train_test_split_dir = INTERIM_DATA_DIR / "20251211_train_test_split"
+    preprocessed_dir = INTERIM_DATA_DIR / "preprocessed_KIRC_data"
+    train_test_split_dir = INTERIM_DATA_DIR / "train_test_split" / cancer_type
     important_genes_path = EXTERNAL_DATA_DIR / "important_genes_shap.csv"
 
     X_data, y_data, train_patients, test_patients, selected_genes, description = (
@@ -653,12 +655,13 @@ if __name__ == "__main__":
             train_test_split_dir,
             important_genes_path,
             use_important_genes=USE_IMPORTANT_GENES,
+            stage_col_name=stage_col_name
         )
     )
 
     # Setup output directories
     output_dir = (
-        INTERIM_DATA_DIR / f"{today}_classification_{cancer_type.lower()}_{description}"
+        INTERIM_DATA_DIR / f"classification_{cancer_type.lower()}_{description}"
     )
     figures_dir = (
         REPORTS_DIR
@@ -666,7 +669,7 @@ if __name__ == "__main__":
         / f"{today}_classification_{cancer_type.lower()}_{description}"
     )
     model_dir = (
-        MODELS_DIR / f"{today}_classification_{cancer_type.lower()}_{description}"
+        MODELS_DIR / f"classification_{cancer_type.lower()}_{description}"
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -715,16 +718,13 @@ if __name__ == "__main__":
     # Base trajectory directory
     synthetic_data_dir = (
         PROCESSED_DATA_DIR
-        / f"{today}_synthetic_data"
+        / f"synthetic_data"
         / cancer_type.lower()
-        / "recnet"
         / "early_to_late"
     )
-    # synthetic_data_dir = PROCESSED_DATA_DIR / f"20251013_synthetic_data" / cancer_type.lower() / "recnet" / "early_to_late" # testing already existing trajectories
 
     # Process train-to-train trajectories
     train_traj_dir = synthetic_data_dir / "train_to_train"
-    # train_traj_dir = synthetic_data_dir / "train_to_train" / "early_to_late" # testing already existing trajectories
     if train_traj_dir.exists():
         logger.info("Processing train-to-train trajectories")
 

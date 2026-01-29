@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-from renalprog.config import INTERIM_DATA_DIR, PROCESSED_DATA_DIR
+from renalprog.config import INTERIM_DATA_DIR, PROCESSED_DATA_DIR, MODELS_DIR
 from renalprog.utils import configure_logging, get_device, set_seed
 from renalprog.modeling.train import VAE, NetworkReconstruction
 from renalprog.modeling.predict import (
@@ -22,6 +22,23 @@ from renalprog.modeling.predict import (
 )
 from sklearn.preprocessing import MinMaxScaler
 
+import argparse
+parser = argparse.ArgumentParser(description='Patient Trajectory Construction Pipeline')
+parser.add_argument('--cancer_type',
+                    type=str,
+                    default='KIRC',
+                    choices=['KIRC', 'BRCA'],
+                    help='Cancer type to process (KIRC or BRCA). Default: KIRC')
+parser.add_argument('--use_pretrained',
+                    action='store_true',
+                    help='Use pretrained models instead of custom-trained ones.')
+parser.add_argument('--model_dir',
+                    type=str,
+                    default=None,
+                    help='Path to the directory containing trained models (VAE and reconstruction network). Required if --use_pretrained is not set.')
+
+args = parser.parse_args()
+
 # Configure logging
 configure_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,7 +46,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # Configuration
 # ============================================================================
-cancer_type = "KIRC"
+cancer_type = args.cancer_type
 set_seed(2023)
 early_late = True
 start_with_first_stage = True
@@ -37,6 +54,53 @@ link_next = 5
 distance_metric = "wasserstein"
 n_timepoints = 50
 interpolation_method = "linear"
+
+if args.use_pretrained:
+    model_dir = MODELS_DIR / "pretrained" / cancer_type
+    logger.info("Using pretrained models")
+
+    # Pretrained model paths (different filename for KIRC)
+    if cancer_type == 'KIRC':
+        vae_model_path = model_dir / "20250321_VAE_idim8516_md512_feat256mse_relu.pth"
+    elif cancer_type == 'BRCA':
+        vae_model_path = model_dir / "20251209_VAE_idim8954_md1024_feat512mse_relu.pth"
+    else:
+        raise ValueError(f"Pretrained models not available for cancer type: {cancer_type}")
+
+    vae_config_path = model_dir / "config.json"
+
+    # Validate pretrained model files exist
+    if not model_dir.exists():
+        logger.error(f"Pretrained model directory does not exist: {model_dir}")
+        raise FileNotFoundError(f"Pretrained model directory not found: {model_dir}")
+    if not vae_model_path.exists():
+        logger.error(f"Pretrained VAE model not found: {vae_model_path}")
+        raise FileNotFoundError(f"Please download pretrained models for {cancer_type}")
+
+else:
+    # Get model_dir from arguments
+    if args.model_dir is None:
+        logger.error("--model_dir is required when --use_pretrained is not set")
+        raise ValueError("Please provide --model_dir argument or use --use_pretrained flag")
+
+    model_dir = Path(args.model_dir)
+    if not model_dir.exists():
+        logger.error(f"Model directory does not exist: {model_dir}")
+        raise FileNotFoundError(f"Model directory not found: {model_dir}")
+
+    # Custom-trained model paths (in vae subdirectory)
+    vae_model_path = model_dir / "vae" / "final_model.pth"
+    vae_config_path = model_dir / "vae" / "config.json"
+
+    # Validate custom model files exist
+    if not vae_model_path.exists():
+        logger.error(f"VAE model not found: {vae_model_path}")
+        raise FileNotFoundError(f"VAE model not found at {vae_model_path}")
+    if not vae_config_path.exists():
+        logger.error(f"VAE config not found: {vae_config_path}")
+        raise FileNotFoundError(f"VAE config not found at {vae_config_path}")
+
+    logger.info(f"Using custom models from: {model_dir}")
 
 # Get device
 force_cpu = True
@@ -147,9 +211,9 @@ test_trajectories = []
 # ============================================================================
 # STEP 4: Generate Train/Test Splits (Optional)
 # ============================================================================
-train_test_split_dir = INTERIM_DATA_DIR / "20260112_train_test_split"
-X_train_path = train_test_split_dir / "X_train.csv"
-X_test_path = train_test_split_dir / "X_test.csv"
+train_test_split_dir = INTERIM_DATA_DIR / "train_test_split" / cancer_type
+y_train_path = train_test_split_dir / "y_train.csv"
+y_test_path = train_test_split_dir / "y_test.csv"
 
 # Initialize variables
 use_train_test_split = False
@@ -158,20 +222,20 @@ test_patients = None
 random_connections_train = None
 random_connections_test = None
 
-if X_train_path.exists() and X_test_path.exists():
+if y_train_path.exists() and y_test_path.exists():
     logger.info("-" * 80)
     logger.info("STEP 4: Generating train/test splits")
     logger.info("-" * 80)
 
     use_train_test_split = True
 
-    # Load X_train and X_test - we only need their indices (patient IDs)
-    X_train = pd.read_csv(X_train_path, index_col=0)
-    X_test = pd.read_csv(X_test_path, index_col=0)
+    # Load y_train and y_test to get patient IDs for train/test splits
+    y_train = pd.read_csv(y_train_path, index_col=0)
+    y_test = pd.read_csv(y_test_path, index_col=0)
 
     # Get patient IDs from the indices
-    train_patients = X_train.index
-    test_patients = X_test.index
+    train_patients = y_train.index
+    test_patients = y_test.index
 
     logger.info(f"Train set: {len(train_patients)} patients")
     logger.info(f"Test set: {len(test_patients)} patients")
@@ -365,12 +429,8 @@ logger.info("-" * 80)
 logger.info("STEP 8: Loading trained VAE and Reconstruction Network models")
 logger.info("-" * 80)
 
-model_dir = Path("models/20260112_models_KIRC")
 
 # Load VAE
-vae_model_path = model_dir / "vae" / "final_model.pth"
-vae_config_path = model_dir / "vae" / "config.json"
-
 with open(vae_config_path, "r") as f:
     vae_config_dict = json.load(f)
 
@@ -381,21 +441,34 @@ vae_model = VAE(
 ).to(device)
 
 checkpoint = torch.load(vae_model_path, map_location=device, weights_only=False)
-vae_model.load_state_dict(checkpoint["model_state_dict"])
+
+# Handle different checkpoint formats (pretrained vs custom-trained)
+if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+    # Custom-trained model format
+    vae_model.load_state_dict(checkpoint["model_state_dict"])
+    logger.info("Loaded VAE with custom-trained checkpoint format")
+else:
+    # Pretrained model format (direct state dict)
+    vae_model.load_state_dict(checkpoint)
+    logger.info("Loaded VAE with pretrained checkpoint format")
+
 vae_model.eval()
 logger.info(f"VAE model loaded from: {vae_model_path}")
 
 # Load Reconstruction Network
-recnet_model_path = model_dir / "reconstruction_network.pth"
+if args.use_pretrained:
+    recnet_model_path = model_dir / "network_reconstruction.pth"
+else:
+    recnet_model_path = model_dir / "reconstruction_network.pth"
+
 recnet_dims_path = model_dir / "network_dims.csv"
 
 network_dims = pd.read_csv(recnet_dims_path).values.tolist()[0]
 logger.info(f"Reconstruction network dimensions: {network_dims}")
 
 recnet_model = NetworkReconstruction(layer_dims=network_dims).to(device)
-recnet_model.load_state_dict(
-    torch.load(recnet_model_path, map_location=device, weights_only=False)
-)
+recnet_checkpoint = torch.load(recnet_model_path, map_location=device, weights_only=False)
+recnet_model.load_state_dict(recnet_checkpoint)
 recnet_model.eval()
 logger.info(f"Reconstruction network loaded from: {recnet_model_path}")
 
@@ -406,29 +479,31 @@ logger.info("-" * 80)
 logger.info("Fitting scaler on TRAIN split only (same as VAE training)")
 logger.info("-" * 80)
 
-# Load train/test split from the same directory used for VAE training
-train_test_split_dir = INTERIM_DATA_DIR / "20251211_train_test_split"
-X_train_path = train_test_split_dir / "X_train.csv"
+# Check if we have train/test split available
+if use_train_test_split and train_patients is not None:
+    # Select train patients from main data using y_train indices
+    # data is (genes × patients), we need to transpose for scaler (patients × genes)
+    X_train = data[train_patients].T  # Transpose to get (patients × genes)
+    logger.info(
+        f"Selected train split from data: {X_train.shape[0]} patients × {X_train.shape[1]} genes"
+    )
 
-if not X_train_path.exists():
-    logger.error(f"Train split not found at {X_train_path}")
-    logger.error("Please run 2_models.py first to create train/test split")
-    raise FileNotFoundError(f"Train split not found: {X_train_path}")
-
-# Load ONLY the train split (genes × patients)
-X_train = pd.read_csv(X_train_path, index_col=0)
-logger.info(
-    f"Loaded train split: {X_train.shape[0]} patients × {X_train.shape[1]} genes"
-)
-
-# Fit scaler ONLY on train data to avoid data leakage
-# X_train is (patients × genes) which is what scaler expects
-scaler = MinMaxScaler()
-scaler.fit(X_train.values)
-logger.info(
-    f"Scaler fitted on TRAIN split: {X_train.shape[0]} patients × {X_train.shape[1]} genes"
-)
-logger.info(f"Scaler range: min={scaler.data_min_[:5]}, max={scaler.data_max_[:5]}")
+    # Fit scaler ONLY on train data to avoid data leakage
+    scaler = MinMaxScaler()
+    scaler.fit(X_train.values)
+    logger.info(
+        f"Scaler fitted on TRAIN split: {X_train.shape[0]} patients × {X_train.shape[1]} genes"
+    )
+    logger.info(f"Scaler range: min={scaler.data_min_[:5]}, max={scaler.data_max_[:5]}")
+else:
+    # No train/test split available, fit scaler on all data
+    logger.warning("No train/test split available. Fitting scaler on all data.")
+    X_all = data.T  # Transpose to get (patients × genes)
+    scaler = MinMaxScaler()
+    scaler.fit(X_all.values)
+    logger.info(
+        f"Scaler fitted on ALL data: {X_all.shape[0]} patients × {X_all.shape[1]} genes"
+    )
 
 # ============================================================================
 # STEP 9: Generate Synthetic Trajectory Data
@@ -449,9 +524,8 @@ if use_train_test_split:
 
     train_synthetic_dir = (
         PROCESSED_DATA_DIR
-        / f"{today}_synthetic_data"
+        / f"synthetic_data"
         / cancer_type.lower()
-        / "recnet"
         / "early_to_late"
         / "train_to_train"
     )
@@ -493,7 +567,6 @@ if use_train_test_split:
         PROCESSED_DATA_DIR
         / f"{today}_synthetic_data"
         / cancer_type.lower()
-        / "recnet"
         / "early_to_late"
         / "test_to_test"
     )
@@ -532,9 +605,8 @@ else:
 
     synthetic_output_dir = (
         PROCESSED_DATA_DIR
-        / f"{today}_synthetic_data"
+        / f"synthetic_data"
         / cancer_type.lower()
-        / "recnet"
         / "early_to_late"
     )
     synthetic_output_dir.mkdir(parents=True, exist_ok=True)
