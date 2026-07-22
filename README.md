@@ -83,12 +83,7 @@ chmod +x quick_setup.sh
 
 ### Using Pretrained Models (Recommended for Paper Reproduction)
 
-The fastest way to reproduce paper results is using the provided pretrained models:
-
-!!! warning "Warning"
-    Pretrained models will be available in future releases in an external model repository for:
-      - KIRC (Kidney Renal Clear Cell Carcinoma)
-      - BRCA (Breast Invasive Carcinoma)
+The fastest way to reproduce paper results is using the provided pretrained models, available on HuggingFace: [gprolcastelo/evenflow_models](https://huggingface.co/gprolcastelo/evenflow_models)
 
 
 
