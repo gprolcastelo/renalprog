@@ -1,7 +1,5 @@
 """
 Patient Trajectory Construction and Synthetic Data Generation Pipeline
-
-EXACT COPY of link_patients.py workflow for KIRC
 """
 
 import pandas as pd
