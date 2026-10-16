@@ -232,10 +232,6 @@ If you use `renalprog` in your research, please cite it as follows:
 }
 ```
 
-**Status**: Preprint in preparation | **Expected publication**: 2026
-
-For the most up-to-date citation information, please visit the [Citation page](https://gprolcastelo.github.io/renalprog/citation/) in our documentation.
-
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](docs/docs/contributing/guidelines.md) for guidelines.
